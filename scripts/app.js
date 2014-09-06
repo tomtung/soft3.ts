@@ -6,15 +6,15 @@
 // ---- Homework 1 ----
 function renderHowework1(rectData) {
     var display = new CS580GL.Display(512, 512).reset({
-        red: 123,
-        green: 112,
-        blue: 96,
-        alpha: 0xff,
+        redUint8: 123,
+        greenUint8: 112,
+        blueUint8: 96,
+        alphaUint8: 0xff,
         z: 0
     });
 
     var scaleRgb = function (value) {
-        return Math.round(Math.max(0, Math.min(4095, value)) / 4095 * 255);
+        return Math.round(CS580GL.clamp(value, 0, 4095) / 4095 * 255);
     };
 
     var renderRectangle = function (dataLine) {
@@ -26,13 +26,31 @@ function renderHowework1(rectData) {
         var b = scaleRgb(numbers[6]);
         for (var x = Math.max(0, numbers[0]); x <= Math.min(numbers[2], 511); x++) {
             for (var y = Math.max(0, numbers[1]); y <= Math.min(numbers[3], 511); y++) {
-                display.pixelAt(x, y).setRed(r).setGreen(g).setBlue(b);
+                display.pixelAt(x, y).setRedUint8(r).setGreenUint8(g).setBlueUint8(b);
             }
         }
     };
 
     rectData.trim().split("\n").forEach(renderRectangle);
 
+    return display;
+}
+
+// ---- Homework 2 ----
+function renderHomework2(pot4Data) {
+    var display = new CS580GL.Display(256, 256).reset({
+        redUint8: 123,
+        greenUint8: 112,
+        blueUint8: 96,
+        alphaUint8: 0xff,
+        z: 0
+    });
+
+    var lines = pot4Data.trim().split("\r");
+    for (var i = 0; i < lines.length; i += 4) {
+    }
+
+    // TODO
     return display;
 }
 
@@ -78,6 +96,9 @@ window.onload = function () {
 
             case "hw2":
                 canvasElem.height = canvasElem.width = 256;
+                loadTextFileAsync("data/pot4.screen.asc", function (text) {
+                    flush(renderHomework2(text));
+                });
                 break;
 
             default:

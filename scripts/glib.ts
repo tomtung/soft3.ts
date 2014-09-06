@@ -9,7 +9,7 @@
  * Since JavaScript and C++ are very different languages,
  * sometimes the suggested C-style C++ API doesn't make sense for JavaScript.
  *
- * Here s a comparison table between the suggested C++ API and JavaScript API:
+ * Here's a comparison table between the suggested C++ API and JavaScript API:
  * - NewFrameBuffer:            the constructor of Display objects
  * - NewDisplay:                the constructor of Display objects
  * - FreeFrameBuffer:           unnecessary in JavaScript
@@ -21,17 +21,114 @@
  * @module CS580GL
  */
 module CS580GL {
+    /** A simple utility function for clamping numbers */
+    export function clamp(num: number, min: number, max: number): number {
+        if (num < min) {
+            return min;
+        } else if (num > max) {
+            return max;
+        } else {
+            return num;
+        }
+    }
 
-    /** A common interface for Pixel objects */
+    /** Represents a color. */
+    export class Color {
+        constructor(
+            //
+            /** Red channel value between 0 and 1. Default is 1. */
+            public red: number = 1,
+            //
+            /** Red channel value between 0 and 1. Default is 1. */
+            public green: number = 1,
+            //
+            /** Red channel value between 0 and 1. Default is 1. */
+            public blue: number = 1
+        ) { }
+
+        setRGB(red: number, green: number, blue: number): Color {
+            this.red = red;
+            this.green = green;
+            this.blue = blue;
+            return this;
+        }
+
+        setRGBUint8(redUint8: number, greenUint8: number, blueUint8: number): Color {
+            this.red = redUint8 / 255;
+            this.green = greenUint8 / 255;
+            this.blue = blueUint8 / 255;
+            return this;
+        }
+
+        static fromRGBUint8(redUint8: number, greenUint8: number, blueUint8: number): Color {
+            return new Color().setRGBUint8(redUint8, greenUint8, blueUint8);
+        }
+
+        setRed(value: number): Color {
+            this.red = value;
+            return this;
+        }
+
+        get redUint8(): number {
+            return this.red * 255;
+        }
+
+        set redUint8(value: number) {
+            this.red = value / 255;
+        }
+
+        setRedUint8(value: number): Color {
+            this.redUint8 = value;
+            return this;
+        }
+
+        setGreen(value: number): Color {
+            this.green = value;
+            return this;
+        }
+
+        get greenUint8(): number {
+            return this.green * 255;
+        }
+
+        set greenUint8(value: number) {
+            this.green = value / 255;
+        }
+
+        setGreenUint8(value: number): Color {
+            this.greenUint8 = value;
+            return this;
+        }
+
+        setBlue(value: number): Color {
+            this.blue = value;
+            return this;
+        }
+
+        get blueUint8(): number {
+            return this.blue * 255;
+        }
+
+        set blueUint8(value: number) {
+            this.blue = value / 255;
+        }
+
+        setBlueUint8(value: number): Color {
+            this.blueUint8 = value;
+            return this;
+        }
+    }
+
+    /** A common interface for Pixel objects. */
     export interface Pixel {
-        red: number;
-        green: number;
-        blue: number;
-        alpha: number;
+        redUint8: number;
+        greenUint8: number;
+        blueUint8: number;
+        alphaUint8: number;
         z: number;
     }
 
-    /** A PixelRef object is a reference to a pixel in a Display object */
+    /** A PixelRef object is a reference to a pixel in a Display object. */
     export class PixelRef implements Pixel {
         zIndex: number;
         rIndex: number;
@@ -51,55 +148,55 @@ module CS580GL {
             this.aIndex = this.bIndex + 1;
         }
 
-        get red(): number {
+        get redUint8(): number {
             return this.display.rgbaBuffer[this.rIndex];
         }
 
-        set red(value: number) {
+        set redUint8(value: number) {
             this.display.rgbaBuffer[this.rIndex] = value;
         }
 
-        setRed(value: number): PixelRef {
-            this.red = value;
+        setRedUint8(value: number): PixelRef {
+            this.redUint8 = value;
             return this;
         }
 
-        get green(): number {
+        get greenUint8(): number {
             return this.display.rgbaBuffer[this.gIndex];
         }
 
-        set green(value: number) {
+        set greenUint8(value: number) {
             this.display.rgbaBuffer[this.gIndex] = value;
         }
 
-        setGreen(value: number): PixelRef {
-            this.green = value;
+        setGreenUint8(value: number): PixelRef {
+            this.greenUint8 = value;
             return this;
         }
 
-        get blue(): number {
+        get blueUint8(): number {
             return this.display.rgbaBuffer[this.bIndex];
         }
 
-        set blue(value: number) {
+        set blueUint8(value: number) {
             this.display.rgbaBuffer[this.bIndex] = value;
         }
 
-        setBlue(value: number): PixelRef {
-            this.blue = value;
+        setBlueUint8(value: number): PixelRef {
+            this.blueUint8 = value;
             return this;
         }
 
-        get alpha(): number {
+        get alphaUint8(): number {
             return this.display.rgbaBuffer[this.aIndex];
         }
 
-        set alpha(value: number) {
+        set alphaUint8(value: number) {
             this.display.rgbaBuffer[this.aIndex] = value;
         }
 
-        setAlpha(value: number): PixelRef {
-            this.red = value;
+        setAlphaUint8(value: number): PixelRef {
+            this.redUint8 = value;
             return this;
         }
 
@@ -113,6 +210,14 @@ module CS580GL {
 
         setZ(value: number): PixelRef {
             this.z = value;
+            return this;
+        }
+
+        setColor(color: Color): PixelRef {
+            this.redUint8 = color.redUint8;
+            this.greenUint8 = color.redUint8;
+            this.blueUint8 = color.blueUint8;
+            this.alphaUint8 = 0xff;
             return this;
         }
     }
@@ -144,17 +249,17 @@ module CS580GL {
 
         /** Reset the entire frame buffer with the (optional) given pixel value */
         reset(pixel: Pixel = {
-            red: 0,
-            green: 0,
-            blue: 0,
-            alpha: 0xff,
+            redUint8: 0,
+            greenUint8: 0,
+            blueUint8: 0,
+            alphaUint8: 0xff,
             z: 0x7fffffff
         }): Display {
             for (var i = 0; i < this.rgbaBuffer.length; i += 4) {
-                this.rgbaBuffer[i] = pixel.red;
-                this.rgbaBuffer[i + 1] = pixel.green;
-                this.rgbaBuffer[i + 2] = pixel.blue;
-                this.rgbaBuffer[i + 3] = pixel.alpha;
+                this.rgbaBuffer[i] = pixel.redUint8;
+                this.rgbaBuffer[i + 1] = pixel.greenUint8;
+                this.rgbaBuffer[i + 2] = pixel.blueUint8;
+                this.rgbaBuffer[i + 3] = pixel.alphaUint8;
             }
             for (i = 0; i < this.zBuffer.length; i += 1) {
                 this.zBuffer[i] = pixel.z;
@@ -186,6 +291,101 @@ module CS580GL {
             }
 
             return new Blob([result], { type: 'image/x-portable-anymap' });
+        }
+    }
+
+    /** 3-D Vector */
+    export class Vector3 {
+        constructor(
+            public x: number = 0,
+            public y: number = 0,
+            public z: number = 0
+         ) { }
+
+        setXYZ(x: number, y: number, z: number): Vector3 {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            return this;
+        }
+
+        setX(value: number): Vector3 {
+            this.x = value;
+            return this;
+        }
+
+        setY(value: number): Vector3 {
+            this.y = value;
+            return this;
+        }
+
+        setZ(value: number): Vector3 {
+            this.z = value;
+            return this;
+        }
+
+        copyFrom(v: Vector3): Vector3 {
+            this.x = v.x;
+            this.y = v.y;
+            this.z = v.z;
+            return this;
+        }
+
+        dot(v: Vector3): number {
+            return this.x * v.x + this.y * v.y + this.z * v.z;
+        }
+
+        divideScalar(scalar: number): Vector3 {
+            this.x /= scalar;
+            this.y /= scalar;
+            this.z /= scalar;
+            return this;
+        }
+
+        lengthSq(): number {
+            return this.x * this.x + this.y * this.y + this.z * this.z;
+        }
+
+        length(): number {
+            return Math.sqrt(this.lengthSq());
+        }
+
+        normalize(): Vector3 {
+            return this.divideScalar(this.length());
+        }
+
+        clone(): Vector3 {
+            return new CS580GL.Vector3(this.x, this.y, this.z);
+        }
+    }
+
+    /** 2-D Vector */
+    export class Vector2 {
+        constructor(
+            public x: number = 0,
+            public y: number = 0
+            ) { }
+
+        setXY(x: number, y: number): Vector2 {
+            this.x = x;
+            this.y = y;
+            return this;
+        }
+
+        setX(value: number): Vector2 {
+            this.x = value;
+            return this;
+        }
+
+        setY(value: number): Vector2 {
+            this.y = value;
+            return this;
+        }
+
+        copyFrom(v: Vector2): Vector2 {
+            this.x = v.x;
+            this.y = v.y;
+            return this;
         }
     }
 }

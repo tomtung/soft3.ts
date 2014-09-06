@@ -8,7 +8,7 @@
 * Since JavaScript and C++ are very different languages,
 * sometimes the suggested C-style C++ API doesn't make sense for JavaScript.
 *
-* Here s a comparison table between the suggested C++ API and JavaScript API:
+* Here's a comparison table between the suggested C++ API and JavaScript API:
 * - NewFrameBuffer:            the constructor of Display objects
 * - NewDisplay:                the constructor of Display objects
 * - FreeFrameBuffer:           unnecessary in JavaScript
@@ -21,9 +21,124 @@
 */
 var CS580GL;
 (function (CS580GL) {
+    /** A simple utility function for clamping numbers */
+    function clamp(num, min, max) {
+        if (num < min) {
+            return min;
+        } else if (num > max) {
+            return max;
+        } else {
+            return num;
+        }
+    }
+    CS580GL.clamp = clamp;
+
+    /** Represents a color. */
+    var Color = (function () {
+        function Color(//
+        /** Red channel value between 0 and 1. Default is 1. */
+        red, //
+        /** Red channel value between 0 and 1. Default is 1. */
+        green, //
+        /** Red channel value between 0 and 1. Default is 1. */
+        blue) {
+            if (typeof red === "undefined") { red = 1; }
+            if (typeof green === "undefined") { green = 1; }
+            if (typeof blue === "undefined") { blue = 1; }
+            this.red = red;
+            this.green = green;
+            this.blue = blue;
+        }
+        Color.prototype.setRGB = function (red, green, blue) {
+            this.red = red;
+            this.green = green;
+            this.blue = blue;
+            return this;
+        };
+
+        Color.prototype.setRGBUint8 = function (redUint8, greenUint8, blueUint8) {
+            this.red = redUint8 / 255;
+            this.green = greenUint8 / 255;
+            this.blue = blueUint8 / 255;
+            return this;
+        };
+
+        Color.fromRGBUint8 = function (redUint8, greenUint8, blueUint8) {
+            return new Color().setRGBUint8(redUint8, greenUint8, blueUint8);
+        };
+
+        Color.prototype.setRed = function (value) {
+            this.red = value;
+            return this;
+        };
+
+        Object.defineProperty(Color.prototype, "redUint8", {
+            get: function () {
+                return this.red * 255;
+            },
+            set: function (value) {
+                this.red = value / 255;
+            },
+            enumerable: true,
+            configurable: true
+        });
+
+
+        Color.prototype.setRedUint8 = function (value) {
+            this.redUint8 = value;
+            return this;
+        };
+
+        Color.prototype.setGreen = function (value) {
+            this.green = value;
+            return this;
+        };
+
+        Object.defineProperty(Color.prototype, "greenUint8", {
+            get: function () {
+                return this.green * 255;
+            },
+            set: function (value) {
+                this.green = value / 255;
+            },
+            enumerable: true,
+            configurable: true
+        });
+
+
+        Color.prototype.setGreenUint8 = function (value) {
+            this.greenUint8 = value;
+            return this;
+        };
+
+        Color.prototype.setBlue = function (value) {
+            this.blue = value;
+            return this;
+        };
+
+        Object.defineProperty(Color.prototype, "blueUint8", {
+            get: function () {
+                return this.blue * 255;
+            },
+            set: function (value) {
+                this.blue = value / 255;
+            },
+            enumerable: true,
+            configurable: true
+        });
+
+
+        Color.prototype.setBlueUint8 = function (value) {
+            this.blueUint8 = value;
+            return this;
+        };
+        return Color;
+    })();
+    CS580GL.Color = Color;
+
     
 
-    /** A PixelRef object is a reference to a pixel in a Display object */
+    /** A PixelRef object is a reference to a pixel in a Display object. */
     var PixelRef = (function () {
         function PixelRef(display, x, y) {
             this.display = display;
@@ -37,7 +152,7 @@ var CS580GL;
             this.bIndex = this.gIndex + 1;
             this.aIndex = this.bIndex + 1;
         }
-        Object.defineProperty(PixelRef.prototype, "red", {
+        Object.defineProperty(PixelRef.prototype, "redUint8", {
             get: function () {
                 return this.display.rgbaBuffer[this.rIndex];
             },
@@ -49,12 +164,12 @@ var CS580GL;
         });
 
 
-        PixelRef.prototype.setRed = function (value) {
-            this.red = value;
+        PixelRef.prototype.setRedUint8 = function (value) {
+            this.redUint8 = value;
             return this;
         };
 
-        Object.defineProperty(PixelRef.prototype, "green", {
+        Object.defineProperty(PixelRef.prototype, "greenUint8", {
             get: function () {
                 return this.display.rgbaBuffer[this.gIndex];
             },
@@ -66,12 +181,12 @@ var CS580GL;
         });
 
 
-        PixelRef.prototype.setGreen = function (value) {
-            this.green = value;
+        PixelRef.prototype.setGreenUint8 = function (value) {
+            this.greenUint8 = value;
             return this;
         };
 
-        Object.defineProperty(PixelRef.prototype, "blue", {
+        Object.defineProperty(PixelRef.prototype, "blueUint8", {
             get: function () {
                 return this.display.rgbaBuffer[this.bIndex];
             },
@@ -83,12 +198,12 @@ var CS580GL;
         });
 
 
-        PixelRef.prototype.setBlue = function (value) {
-            this.blue = value;
+        PixelRef.prototype.setBlueUint8 = function (value) {
+            this.blueUint8 = value;
             return this;
         };
 
-        Object.defineProperty(PixelRef.prototype, "alpha", {
+        Object.defineProperty(PixelRef.prototype, "alphaUint8", {
             get: function () {
                 return this.display.rgbaBuffer[this.aIndex];
             },
@@ -100,8 +215,8 @@ var CS580GL;
         });
 
 
-        PixelRef.prototype.setAlpha = function (value) {
-            this.red = value;
+        PixelRef.prototype.setAlphaUint8 = function (value) {
+            this.redUint8 = value;
             return this;
         };
 
@@ -119,6 +234,14 @@ var CS580GL;
 
         PixelRef.prototype.setZ = function (value) {
             this.z = value;
+            return this;
+        };
+
+        PixelRef.prototype.setColor = function (color) {
+            this.redUint8 = color.redUint8;
+            this.greenUint8 = color.redUint8;
+            this.blueUint8 = color.blueUint8;
+            this.alphaUint8 = 0xff;
             return this;
         };
         return PixelRef;
@@ -151,17 +274,17 @@ var CS580GL;
         /** Reset the entire frame buffer with the (optional) given pixel value */
         Display.prototype.reset = function (pixel) {
             if (typeof pixel === "undefined") { pixel = {
-                red: 0,
-                green: 0,
-                blue: 0,
-                alpha: 0xff,
+                redUint8: 0,
+                greenUint8: 0,
+                blueUint8: 0,
+                alphaUint8: 0xff,
                 z: 0x7fffffff
             }; }
             for (var i = 0; i < this.rgbaBuffer.length; i += 4) {
-                this.rgbaBuffer[i] = pixel.red;
-                this.rgbaBuffer[i + 1] = pixel.green;
-                this.rgbaBuffer[i + 2] = pixel.blue;
-                this.rgbaBuffer[i + 3] = pixel.alpha;
+                this.rgbaBuffer[i] = pixel.redUint8;
+                this.rgbaBuffer[i + 1] = pixel.greenUint8;
+                this.rgbaBuffer[i + 2] = pixel.blueUint8;
+                this.rgbaBuffer[i + 3] = pixel.alphaUint8;
             }
             for (i = 0; i < this.zBuffer.length; i += 1) {
                 this.zBuffer[i] = pixel.z;
@@ -199,4 +322,106 @@ var CS580GL;
         return Display;
     })();
     CS580GL.Display = Display;
+
+    /** 3-D Vector */
+    var Vector3 = (function () {
+        function Vector3(x, y, z) {
+            if (typeof x === "undefined") { x = 0; }
+            if (typeof y === "undefined") { y = 0; }
+            if (typeof z === "undefined") { z = 0; }
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+        Vector3.prototype.setXYZ = function (x, y, z) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            return this;
+        };
+
+        Vector3.prototype.setX = function (value) {
+            this.x = value;
+            return this;
+        };
+
+        Vector3.prototype.setY = function (value) {
+            this.y = value;
+            return this;
+        };
+
+        Vector3.prototype.setZ = function (value) {
+            this.z = value;
+            return this;
+        };
+
+        Vector3.prototype.copyFrom = function (v) {
+            this.x = v.x;
+            this.y = v.y;
+            this.z = v.z;
+            return this;
+        };
+
+        Vector3.prototype.dot = function (v) {
+            return this.x * v.x + this.y * v.y + this.z * v.z;
+        };
+
+        Vector3.prototype.divideScalar = function (scalar) {
+            this.x /= scalar;
+            this.y /= scalar;
+            this.z /= scalar;
+            return this;
+        };
+
+        Vector3.prototype.lengthSq = function () {
+            return this.x * this.x + this.y * this.y + this.z * this.z;
+        };
+
+        Vector3.prototype.length = function () {
+            return Math.sqrt(this.lengthSq());
+        };
+
+        Vector3.prototype.normalize = function () {
+            return this.divideScalar(this.length());
+        };
+
+        Vector3.prototype.clone = function () {
+            return new CS580GL.Vector3(this.x, this.y, this.z);
+        };
+        return Vector3;
+    })();
+    CS580GL.Vector3 = Vector3;
+
+    /** 2-D Vector */
+    var Vector2 = (function () {
+        function Vector2(x, y) {
+            if (typeof x === "undefined") { x = 0; }
+            if (typeof y === "undefined") { y = 0; }
+            this.x = x;
+            this.y = y;
+        }
+        Vector2.prototype.setXY = function (x, y) {
+            this.x = x;
+            this.y = y;
+            return this;
+        };
+
+        Vector2.prototype.setX = function (value) {
+            this.x = value;
+            return this;
+        };
+
+        Vector2.prototype.setY = function (value) {
+            this.y = value;
+            return this;
+        };
+
+        Vector2.prototype.copyFrom = function (v) {
+            this.x = v.x;
+            this.y = v.y;
+            return this;
+        };
+        return Vector2;
+    })();
+    CS580GL.Vector2 = Vector2;
 })(CS580GL || (CS580GL = {}));
