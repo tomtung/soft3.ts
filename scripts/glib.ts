@@ -1,4 +1,28 @@
-﻿module CS580GL {
+﻿//
+// 2014 Fall - CSCI 580 3D - Graphics Rendering
+// by Yubing Dong
+//
+
+/**
+ * The CS580GL module contains the hand-crafted 3-D rendering library.
+ *
+ * Since JavaScript and C++ are very different languages,
+ * sometimes the suggested C-style C++ API doesn't make sense for JavaScript.
+ *
+ * Here s a comparison table between the suggested C++ API and JavaScript API:
+ * - NewFrameBuffer:            the constructor of Display objects
+ * - NewDisplay:                the constructor of Display objects
+ * - FreeFrameBuffer:           unnecessary in JavaScript
+ * - FreeDisplay:               unncessary in JavaScript
+ * - ClearDisplay:              Display.prototype.reset
+ * - {Get|Set}DisplayPixel:     Display.prototype.pixelAt returns a PixelRef object, which supports get/set operation
+ * - FlushDisplayToPPMFile:     Display.prototype.toNetpbm
+ *
+ * @module CS580GL
+ */
+module CS580GL {
+
+    /** A common interface for Pixel objects */
     export interface Pixel {
         red: number;
         green: number;
@@ -7,7 +31,7 @@
         z: number;
     }
 
-    // A PixelRef object is a reference to a pixel in a Display object
+    /** A PixelRef object is a reference to a pixel in a Display object */
     export class PixelRef implements Pixel {
         zIndex: number;
         rIndex: number;
@@ -93,6 +117,13 @@
         }
     }
 
+    /**
+     * A Display object represents a frame buffer,
+     * which contains an array of 32-bit RGBA pixel values and a 32-bit depth value for each pixel.
+     *
+     * Note that the RGBA array and the Z buffer are stored separately,
+     * since it is hard to efficiently use heterogenious arrays in JavaScript
+     */
     export class Display {
         rgbaBuffer: Uint8Array;
         zBuffer: Int32Array;
@@ -106,10 +137,12 @@
             this.reset();
         }
 
+        /** Returns a reference to the pixel at the position specified by x and y */
         pixelAt(x: number, y: number): PixelRef {
             return new PixelRef(this, x, y);
         }
 
+        /** Reset the entire frame buffer with the (optional) given pixel value */
         reset(pixel: Pixel = {
             red: 0,
             green: 0,
@@ -129,6 +162,7 @@
             return this;
         }
 
+        /** Flush the frame into a HTML Canvas element */
         drawOnCanvas(canvasElem: HTMLCanvasElement, x: number = 0, y: number = 0) {
             var canvasContext = canvasElem.getContext("2d");
             var imageData = canvasContext.createImageData(this.xres, this.yres);
@@ -136,6 +170,7 @@
             canvasContext.putImageData(imageData, x, y);
         }
 
+        /** Flush the frame in the Netpbm image format (PPM) and return the result as a Blob */
         toNetpbm(): Blob {
             var result = "P3\n" + this.xres + " " + this.yres + "\n255\n";
 

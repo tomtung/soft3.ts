@@ -1,5 +1,11 @@
 ﻿/// <reference path="glib.ts" />
 
+//
+// 2014 Fall - CSCI 580 3D - Graphics Rendering
+// by Yubing Dong
+//
+
+// ---- Homework 1 ----
 function renderHowework1(rectData: string): CS580GL.Display {
     var display = new CS580GL.Display(512, 512).reset({
         red: 123,
@@ -14,8 +20,8 @@ function renderHowework1(rectData: string): CS580GL.Display {
             Math.max(0, Math.min(4095, value)) / 4095 * 255
         );
 
-    var drawRectangleLine = (line: string) => {
-        var numbers = line.split("\t").map(n => parseInt(n));
+    var renderRectangle = (dataLine: string) => {
+        var numbers = dataLine.split("\t").map(n => parseInt(n));
         var r = scaleRgb(numbers[4]);
         var g = scaleRgb(numbers[5]);
         var b = scaleRgb(numbers[6]);
@@ -26,11 +32,12 @@ function renderHowework1(rectData: string): CS580GL.Display {
         }
     }
 
-    rectData.trim().split("\n").forEach(drawRectangleLine);
+    rectData.trim().split("\n").forEach(renderRectangle);
 
     return display;
 }
 
+// Utility function for loading text file content
 function loadTextFileAsync(url: string, callback: (string) => any): void {
     var client = new XMLHttpRequest();
     client.open('GET', url);
@@ -47,25 +54,38 @@ window.onload = () => {
     var downloadAnchorElem = <HTMLAnchorElement> document.getElementById("download");
     var selectElem = <HTMLSelectElement> document.getElementById("select");
 
+    // Utility function for flushing the Display into both the Canvas and a PPM file
     var flush = (display: CS580GL.Display) => {
         display.drawOnCanvas(canvasElem);
 
-        URL.revokeObjectURL(downloadAnchorElem.href);
         downloadAnchorElem.href = URL.createObjectURL(display.toNetpbm());
         downloadAnchorElem.setAttribute('download', 'render-result.ppm');
     }
 
+    // Load data for the selected homework,
+    // call the corresponding render function,
+    // and flush the rendering result
     var renderSelection = () => {
+        URL.revokeObjectURL(downloadAnchorElem.href);
+        downloadAnchorElem.href = "#";
+
         switch (selectElem.value) {
             case "hw1":
+                canvasElem.height = canvasElem.width = 512;
                 loadTextFileAsync("data/rects", text => {
                     flush(renderHowework1(text));
-                })
-            break;
+                });
+                break;
+            
+            case "hw2":
+                canvasElem.height = canvasElem.width = 256;
+                break;
+
             default:
         }
     };
 
+    // Call once after load, and call each time the selection changes
     renderSelection();
     selectElem.onchange = renderSelection;
 };
