@@ -1,0 +1,10 @@
+﻿#root-container {
+    margin: auto;
+    width: 100%;
+    max-width: 1000px;
+    text-align: center;
+}
+
+canvas {
+    background: #000000;
+}
