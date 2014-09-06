@@ -2,6 +2,14 @@
 // 2014 Fall - CSCI 580 3D - Graphics Rendering
 // by Yubing Dong
 //
+var __applyMixins = this.__applyMixins || function (derivedCtor, baseCtors) {
+    baseCtors.forEach(function (baseCtor) {
+        Object.getOwnPropertyNames(baseCtor.prototype).forEach(function (name) {
+            derivedCtor.prototype[name] = baseCtor.prototype[name];
+        });
+    });
+};
+
 /**
 * The CS580GL module contains the hand-crafted 3-D rendering library.
 *
@@ -33,7 +41,7 @@ var CS580GL;
     }
     CS580GL.clamp = clamp;
 
-    /** Represents a color. */
+    /** A Color object represents a color. */
     var Color = (function () {
         function Color(//
         /** Red channel value between 0 and 1. Default is 1. */
@@ -136,7 +144,59 @@ var CS580GL;
     })();
     CS580GL.Color = Color;
 
-    
+    /** A Pixel object represents a pixel with RGBA color and depth information. */
+    var Pixel = (function () {
+        function Pixel() {
+            this.redUint8 = 0;
+            this.greenUint8 = 0;
+            this.blueUint8 = 0;
+            this.alphaUint8 = 0xff;
+            this.z = 0x7fffffff;
+        }
+        Pixel.prototype.setRedUint8 = function (value) {
+            this.redUint8 = value;
+            return this;
+        };
+
+        Pixel.prototype.setGreenUint8 = function (value) {
+            this.greenUint8 = value;
+            return this;
+        };
+
+        Pixel.prototype.setBlueUint8 = function (value) {
+            this.blueUint8 = value;
+            return this;
+        };
+
+        Pixel.prototype.setAlphaUint8 = function (value) {
+            this.redUint8 = value;
+            return this;
+        };
+
+        Pixel.prototype.setZ = function (value) {
+            this.z = value;
+            return this;
+        };
+
+        Pixel.prototype.copyFrom = function (that) {
+            this.redUint8 = that.redUint8;
+            this.greenUint8 = that.greenUint8;
+            this.blueUint8 = that.blueUint8;
+            this.alphaUint8 = that.alphaUint8;
+            this.z = that.z;
+            return this;
+        };
+
+        Pixel.prototype.setColor = function (color) {
+            this.redUint8 = color.redUint8;
+            this.greenUint8 = color.redUint8;
+            this.blueUint8 = color.blueUint8;
+            this.alphaUint8 = 0xff;
+            return this;
+        };
+        return Pixel;
+    })();
+    CS580GL.Pixel = Pixel;
 
     /** A PixelRef object is a reference to a pixel in a Display object. */
     var PixelRef = (function () {
@@ -164,11 +224,6 @@ var CS580GL;
         });
 
 
-        PixelRef.prototype.setRedUint8 = function (value) {
-            this.redUint8 = value;
-            return this;
-        };
-
         Object.defineProperty(PixelRef.prototype, "greenUint8", {
             get: function () {
                 return this.display.rgbaBuffer[this.gIndex];
@@ -180,11 +235,6 @@ var CS580GL;
             configurable: true
         });
 
-
-        PixelRef.prototype.setGreenUint8 = function (value) {
-            this.greenUint8 = value;
-            return this;
-        };
 
         Object.defineProperty(PixelRef.prototype, "blueUint8", {
             get: function () {
@@ -198,11 +248,6 @@ var CS580GL;
         });
 
 
-        PixelRef.prototype.setBlueUint8 = function (value) {
-            this.blueUint8 = value;
-            return this;
-        };
-
         Object.defineProperty(PixelRef.prototype, "alphaUint8", {
             get: function () {
                 return this.display.rgbaBuffer[this.aIndex];
@@ -215,11 +260,6 @@ var CS580GL;
         });
 
 
-        PixelRef.prototype.setAlphaUint8 = function (value) {
-            this.redUint8 = value;
-            return this;
-        };
-
         Object.defineProperty(PixelRef.prototype, "z", {
             get: function () {
                 return this.display.zBuffer[this.zIndex];
@@ -231,22 +271,11 @@ var CS580GL;
             configurable: true
         });
 
-
-        PixelRef.prototype.setZ = function (value) {
-            this.z = value;
-            return this;
-        };
-
-        PixelRef.prototype.setColor = function (color) {
-            this.redUint8 = color.redUint8;
-            this.greenUint8 = color.redUint8;
-            this.blueUint8 = color.blueUint8;
-            this.alphaUint8 = 0xff;
-            return this;
-        };
         return PixelRef;
     })();
     CS580GL.PixelRef = PixelRef;
+
+    __applyMixins(PixelRef, [Pixel]);
 
     /**
     * A Display object represents a frame buffer,
@@ -323,7 +352,7 @@ var CS580GL;
     })();
     CS580GL.Display = Display;
 
-    /** 3-D Vector */
+    /** A Vector3 object represents a 3-D Vector */
     var Vector3 = (function () {
         function Vector3(x, y, z) {
             if (typeof x === "undefined") { x = 0; }
@@ -392,7 +421,7 @@ var CS580GL;
     })();
     CS580GL.Vector3 = Vector3;
 
-    /** 2-D Vector */
+    /** A Vector2 object represents a 2-D Vector */
     var Vector2 = (function () {
         function Vector2(x, y) {
             if (typeof x === "undefined") { x = 0; }

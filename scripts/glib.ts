@@ -3,6 +3,14 @@
 // by Yubing Dong
 //
 
+var __applyMixins = this.__applyMixins || function (derivedCtor: any, baseCtors: any[]) {
+    baseCtors.forEach(baseCtor => {
+        Object.getOwnPropertyNames(baseCtor.prototype).forEach(name => {
+            derivedCtor.prototype[name] = baseCtor.prototype[name];
+        })
+    });
+}
+
 /**
  * The CS580GL module contains the hand-crafted 3-D rendering library.
  *
@@ -32,7 +40,7 @@ module CS580GL {
         }
     }
 
-    /** Represents a color. */
+    /** A Color object represents a color. */
     export class Color {
         constructor(
             //
@@ -119,13 +127,55 @@ module CS580GL {
         }
     }
 
-    /** A common interface for Pixel objects. */
-    export interface Pixel {
-        redUint8: number;
-        greenUint8: number;
-        blueUint8: number;
-        alphaUint8: number;
-        z: number;
+    /** A Pixel object represents a pixel with RGBA color and depth information. */
+    export class Pixel {
+        redUint8: number = 0;
+        greenUint8: number = 0;
+        blueUint8: number = 0;
+        alphaUint8: number = 0xff;
+        z: number = 0x7fffffff;
+
+        setRedUint8(value: number): Pixel {
+            this.redUint8 = value;
+            return this;
+        }
+
+        setGreenUint8(value: number): Pixel {
+            this.greenUint8 = value;
+            return this;
+        }
+
+        setBlueUint8(value: number): Pixel {
+            this.blueUint8 = value;
+            return this;
+        }
+
+        setAlphaUint8(value: number): Pixel {
+            this.redUint8 = value;
+            return this;
+        }
+
+        setZ(value: number): Pixel {
+            this.z = value;
+            return this;
+        }
+
+        copyFrom(that: Pixel): Pixel {
+            this.redUint8 = that.redUint8;
+            this.greenUint8 = that.greenUint8;
+            this.blueUint8 = that.blueUint8;
+            this.alphaUint8 = that.alphaUint8;
+            this.z = that.z;
+            return this;
+        }
+
+        setColor(color: Color): Pixel {
+            this.redUint8 = color.redUint8;
+            this.greenUint8 = color.redUint8;
+            this.blueUint8 = color.blueUint8;
+            this.alphaUint8 = 0xff;
+            return this;
+        }
     }
 
     /** A PixelRef object is a reference to a pixel in a Display object. */
@@ -156,22 +206,12 @@ module CS580GL {
             this.display.rgbaBuffer[this.rIndex] = value;
         }
 
-        setRedUint8(value: number): PixelRef {
-            this.redUint8 = value;
-            return this;
-        }
-
         get greenUint8(): number {
             return this.display.rgbaBuffer[this.gIndex];
         }
 
         set greenUint8(value: number) {
             this.display.rgbaBuffer[this.gIndex] = value;
-        }
-
-        setGreenUint8(value: number): PixelRef {
-            this.greenUint8 = value;
-            return this;
         }
 
         get blueUint8(): number {
@@ -182,22 +222,12 @@ module CS580GL {
             this.display.rgbaBuffer[this.bIndex] = value;
         }
 
-        setBlueUint8(value: number): PixelRef {
-            this.blueUint8 = value;
-            return this;
-        }
-
         get alphaUint8(): number {
             return this.display.rgbaBuffer[this.aIndex];
         }
 
         set alphaUint8(value: number) {
             this.display.rgbaBuffer[this.aIndex] = value;
-        }
-
-        setAlphaUint8(value: number): PixelRef {
-            this.redUint8 = value;
-            return this;
         }
 
         get z(): number {
@@ -207,20 +237,18 @@ module CS580GL {
         set z(value: number) {
             this.display.zBuffer[this.zIndex] = value;
         }
-
-        setZ(value: number): PixelRef {
-            this.z = value;
-            return this;
-        }
-
-        setColor(color: Color): PixelRef {
-            this.redUint8 = color.redUint8;
-            this.greenUint8 = color.redUint8;
-            this.blueUint8 = color.blueUint8;
-            this.alphaUint8 = 0xff;
-            return this;
-        }
+        
+        // Mixin methods from Pixel
+        setRedUint8: (number) => Pixel;
+        setGreenUint8: (number) => Pixel;
+        setBlueUint8: (number) => Pixel;
+        setAlphaUint8: (number) => Pixel;
+        setZ: (number) => Pixel;
+        copyFrom: (Pixel) => Pixel;
+        setColor: (Color) => Pixel;
     }
+
+    __applyMixins(PixelRef, [Pixel]);
 
     /**
      * A Display object represents a frame buffer,
@@ -294,7 +322,7 @@ module CS580GL {
         }
     }
 
-    /** 3-D Vector */
+    /** A Vector3 object represents a 3-D Vector */
     export class Vector3 {
         constructor(
             public x: number = 0,
@@ -359,7 +387,7 @@ module CS580GL {
         }
     }
 
-    /** 2-D Vector */
+    /** A Vector2 object represents a 2-D Vector */
     export class Vector2 {
         constructor(
             public x: number = 0,
