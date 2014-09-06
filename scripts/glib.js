@@ -146,12 +146,13 @@ var CS580GL;
 
     /** A Pixel object represents a pixel with RGBA color and depth information. */
     var Pixel = (function () {
-        function Pixel() {
-            this.redUint8 = 0;
-            this.greenUint8 = 0;
-            this.blueUint8 = 0;
-            this.alphaUint8 = 0xff;
-            this.z = 0x7fffffff;
+        function Pixel(pixelValue) {
+            if (typeof pixelValue === "undefined") { pixelValue = {}; }
+            this.redUint8 = pixelValue.redUint8 || 0;
+            this.greenUint8 = pixelValue.greenUint8 || 0;
+            this.blueUint8 = pixelValue.blueUint8 || 0;
+            this.alphaUint8 = pixelValue.alphaUint8 || 0xff;
+            this.z = pixelValue.z || 0x7fffffff;
         }
         Pixel.prototype.setRedUint8 = function (value) {
             this.redUint8 = value;
@@ -302,13 +303,13 @@ var CS580GL;
 
         /** Reset the entire frame buffer with the (optional) given pixel value */
         Display.prototype.reset = function (pixel) {
-            if (typeof pixel === "undefined") { pixel = {
+            if (typeof pixel === "undefined") { pixel = new Pixel({
                 redUint8: 0,
                 greenUint8: 0,
                 blueUint8: 0,
                 alphaUint8: 0xff,
                 z: 0x7fffffff
-            }; }
+            }); }
             for (var i = 0; i < this.rgbaBuffer.length; i += 4) {
                 this.rgbaBuffer[i] = pixel.redUint8;
                 this.rgbaBuffer[i + 1] = pixel.greenUint8;

@@ -3,15 +3,12 @@
 // 2014 Fall - CSCI 580 3D - Graphics Rendering
 // by Yubing Dong
 //
+var defaultBackgroundColor = CS580GL.Color.fromRGBUint8(123, 112, 96);
+var defaultBackgroundPixel = new CS580GL.Pixel().setColor(defaultBackgroundColor);
+
 // ---- Homework 1 ----
 function renderHowework1(rectData) {
-    var display = new CS580GL.Display(512, 512).reset({
-        redUint8: 123,
-        greenUint8: 112,
-        blueUint8: 96,
-        alphaUint8: 0xff,
-        z: 0
-    });
+    var display = new CS580GL.Display(512, 512).reset(defaultBackgroundPixel);
 
     var scaleRgb = function (value) {
         return Math.round(CS580GL.clamp(value, 0, 4095) / 4095 * 255);
@@ -38,13 +35,7 @@ function renderHowework1(rectData) {
 
 // ---- Homework 2 ----
 function renderHomework2(pot4Data) {
-    var display = new CS580GL.Display(256, 256).reset({
-        redUint8: 123,
-        greenUint8: 112,
-        blueUint8: 96,
-        alphaUint8: 0xff,
-        z: 0
-    });
+    var display = new CS580GL.Display(256, 256).reset(defaultBackgroundPixel);
 
     var lines = pot4Data.trim().split("\r");
     for (var i = 0; i < lines.length; i += 4) {

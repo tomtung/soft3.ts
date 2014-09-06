@@ -129,11 +129,19 @@ module CS580GL {
 
     /** A Pixel object represents a pixel with RGBA color and depth information. */
     export class Pixel {
-        redUint8: number = 0;
-        greenUint8: number = 0;
-        blueUint8: number = 0;
-        alphaUint8: number = 0xff;
-        z: number = 0x7fffffff;
+        redUint8: number;
+        greenUint8: number;
+        blueUint8: number;
+        alphaUint8: number;
+        z: number;
+
+        constructor(pixelValue: any = {}) {
+            this.redUint8 = pixelValue.redUint8 || 0;
+            this.greenUint8 = pixelValue.greenUint8|| 0;
+            this.blueUint8 = pixelValue.blueUint8 || 0;
+            this.alphaUint8 = pixelValue.alphaUint8 || 0xff;
+            this.z = pixelValue.z || 0x7fffffff;
+        }
 
         setRedUint8(value: number): Pixel {
             this.redUint8 = value;
@@ -276,13 +284,13 @@ module CS580GL {
         }
 
         /** Reset the entire frame buffer with the (optional) given pixel value */
-        reset(pixel: Pixel = {
+        reset(pixel: Pixel = new Pixel({
             redUint8: 0,
             greenUint8: 0,
             blueUint8: 0,
             alphaUint8: 0xff,
             z: 0x7fffffff
-        }): Display {
+        })): Display {
             for (var i = 0; i < this.rgbaBuffer.length; i += 4) {
                 this.rgbaBuffer[i] = pixel.redUint8;
                 this.rgbaBuffer[i + 1] = pixel.greenUint8;
