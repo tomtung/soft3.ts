@@ -542,7 +542,7 @@ var CS580GL;
             };
 
             var renderScanLine = function (x1, z1, x2, z2, y) {
-                var number, m, x, z;
+                var m, x, z;
                 if (x1 >= _this.display.xres || x2 < 0) {
                     return;
                 }
@@ -620,3 +620,4 @@ var CS580GL;
     })();
     CS580GL.Renderer = Renderer;
 })(CS580GL || (CS580GL = {}));
+//# sourceMappingURL=glib.js.map

@@ -53,7 +53,7 @@ function renderHomework2(pot4Data) {
             coef = -coef;
         }
         if (coef > 1) {
-            coef > 1;
+            coef = 1;
         }
         return new CS580GL.Color(0.95, 0.65, 0.88).multiplyScalar(coef);
     }
@@ -132,3 +132,4 @@ window.onload = function () {
     renderSelection();
     selectElem.onchange = renderSelection;
 };
+//# sourceMappingURL=app.js.map

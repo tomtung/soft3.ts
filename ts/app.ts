@@ -53,7 +53,7 @@ function renderHomework2(pot4Data: string): CS580GL.Display {
             coef = -coef;
         }
         if (coef > 1) {
-            coef > 1;
+            coef = 1;
         }
         return new CS580GL.Color(0.95, 0.65, 0.88).multiplyScalar(coef);
     }

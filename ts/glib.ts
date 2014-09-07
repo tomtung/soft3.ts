@@ -522,7 +522,7 @@ module CS580GL {
             var floatEq = (x: number, y: number) => Math.abs(x - y) < 1e-6;
 
             var renderScanLine = (x1: number, z1: number, x2: number, z2: number, y: number) => {
-                var number, m: number, x: number, z: number;
+                var m: number, x: number, z: number;
                 if (x1 >= this.display.xres || x2 < 0) {
                     return;
                 }
