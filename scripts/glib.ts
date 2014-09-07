@@ -18,6 +18,7 @@ var __applyMixins = this.__applyMixins || function (derivedCtor: any, baseCtors:
  * sometimes the suggested C-style C++ API doesn't make sense for JavaScript.
  *
  * Here's a comparison table between the suggested C++ API and JavaScript API:
+ * ( Homework 1 )
  * - NewFrameBuffer:            the constructor of Display objects
  * - NewDisplay:                the constructor of Display objects
  * - FreeFrameBuffer:           unnecessary in JavaScript
@@ -25,7 +26,12 @@ var __applyMixins = this.__applyMixins || function (derivedCtor: any, baseCtors:
  * - ClearDisplay:              Display.prototype.reset
  * - {Get|Set}DisplayPixel:     Display.prototype.pixelAt returns a PixelRef object, which supports get/set operation
  * - FlushDisplayToPPMFile:     Display.prototype.toNetpbm
- *
+ * ( Homework 2 )
+ * - NewRender:                 the constructor of Renderer objects
+ * - FreeRender:                unnecessary in JavaScript
+ * - BeginRender:               Display.prototype.reset
+ * - PutAttribute:              Renderer.prototype.setAttributes
+ * - PutTriangle:               Renderer.prototype.renderTriangle
  * @module CS580GL
  */
 module CS580GL {
@@ -136,6 +142,15 @@ module CS580GL {
             this.blue = this.blue * scalar;
             return this;
         }
+
+        getHex(): number {
+            return (this.redUint8 << 16) | (this.greenUint8 << 8) | this.blueUint8;
+        }
+
+        getHexString(): string {
+            // Smart implementatin borrowed from three.js
+            return ("000000" + this.getHex().toString(16)).slice(-6);
+        }
     }
 
     /** A Pixel object represents a pixel with RGBA color and depth information. */
@@ -190,7 +205,7 @@ module CS580GL {
 
         setColor(color: Color): Pixel {
             this.redUint8 = color.redUint8;
-            this.greenUint8 = color.redUint8;
+            this.greenUint8 = color.greenUint8;
             this.blueUint8 = color.blueUint8;
             this.alphaUint8 = 0xff;
             return this;
@@ -386,6 +401,17 @@ module CS580GL {
             return v1.clone().dot(v2);
         }
 
+        add(v: Vector3): Vector3 {
+            this.x += v.x;
+            this.y += v.y;
+            this.z += v.z;
+            return this;
+        }
+
+        static add(v1: Vector3, v2: Vector3) {
+            return v1.clone().add(v2);
+        }
+
         divideScalar(scalar: number): Vector3 {
             this.x /= scalar;
             this.y /= scalar;
@@ -440,12 +466,132 @@ module CS580GL {
         }
     }
 
-    /** A Triangle object represents a geometric triangle specified by three vertices as Vector3 objects */
-    export class Triangle {
+    /**
+     * A MeshVertex object represents a vertex,
+     * including its position, normal, and UV mapping values
+     */
+    export interface MeshVertex {
+        position: Vector3;
+        normal?: Vector3;
+        uv?: Vector2;
+    }
+
+    /** A TriangleFace object represents a triangle face in a triangle mesh */
+    export class MeshTriangle {
         constructor(
-            public a: Vector3 = new Vector3(),
-            public b: Vector3 = new Vector3(),
-            public c: Vector3 = new Vector3()) {
+            public a: MeshVertex,
+            public b: MeshVertex,
+            public c: MeshVertex) {
+        }
+
+        toVertexArray(): MeshVertex[] {
+            return [this.a, this.b, this.c];
+        }
+    }
+
+    export interface RenderAttributes {
+        flatColor?: Color
+    }
+
+    /** Render objects contructor */
+    export class Renderer {
+        flatColor: Color;
+
+        constructor(public display: Display) {
+        }
+
+        setAttributes(attributes: RenderAttributes): Renderer {
+            if (attributes.flatColor) {
+                this.flatColor = attributes.flatColor;
+            }
+            return this;
+        }
+
+        renderPixel(x: number, y: number, z: number, color: Color): Renderer {
+            if (z >= 0 && x >= 0 && y >= 0 && x < this.display.xres && y < this.display.yres) {
+                var pixelRef = this.display.pixelAt(x, y);
+                if (pixelRef.z > z) {
+                    pixelRef.setColor(color);
+                    pixelRef.z = z;
+                }
+            }
+            return this;
+        }
+
+        renderTriangle(triangle: MeshTriangle): Renderer {
+            function floatEq(x: number, y: number): boolean {
+                return Math.abs(x - y) < 1e-6;
+            }
+
+            var renderScanLine = (x1: number, z1: number, x2: number, z2: number, y: number) => {
+                var tmp: number, m: number, x: number, z: number;
+                if (x1 > x2) {
+                    tmp = x1, x1 = x2, x2 = tmp;
+                    tmp = z1, z1 = z2, z2 = tmp;
+                }
+
+                if (x1 >= this.display.xres || x2 < 0) {
+                    return;
+                }
+
+                m = (z1 - z2) / (x1 - x2);
+                x = Math.max(0, Math.round(x1)); // Note: Use round instead of ceil
+                z = z1 + m * (x - x1); // TODO why use int instead of float?
+                for (; x < Math.min(x2, this.display.xres - 1); x += 1, z += m) {
+                    this.renderPixel(x, y, Math.round(z), this.flatColor);
+                }
+            }
+
+            var vertices = triangle.toVertexArray();
+            vertices.sort((l, r) => l.position.y - r.position.y);
+
+            var p = vertices.map(v => v.position);
+
+            var y = Math.ceil(p[0].y);
+            var deltaY = y - p[0].y;
+
+            if (floatEq(p[0].y, p[1].y)) {
+                var mx02 = (p[0].x - p[2].x) / (p[0].y - p[2].y);
+                var x02 = p[0].x + mx02 * deltaY;
+                var mz02 = (p[0].z - p[2].z) / (p[0].y - p[2].y);
+                var z02 = p[0].z + mz02 * deltaY;
+
+                var mx12 = (p[1].x - p[2].x) / (p[1].y - p[2].y);
+                var x12 = p[1].x + mx12 * deltaY;
+                var mz12 = (p[1].z - p[2].z) / (p[1].y - p[2].y);
+                var z12 = p[1].z + mz12 * deltaY;
+
+                for (; y <= p[2].y; y += 1, x12 += mx12, z12 += mz12, x02 += mx02, z02 += mz02) {
+                    renderScanLine(x12, z12, x02, z02, y);
+                }
+            } else {
+                var mx01 = (p[0].x - p[1].x) / (p[0].y - p[1].y);
+                var x01 = p[0].x + mx01 * deltaY;
+                var mz01 = (p[0].z - p[1].z) / (p[0].y - p[1].y);
+                var z01 = p[0].z + mz01 * deltaY;
+
+                var mx02 = (p[0].x - p[2].x) / (p[0].y - p[2].y);
+                var x02 = p[0].x + mx02 * deltaY;
+                var mz02 = (p[0].z - p[2].z) / (p[0].y - p[2].y);
+                var z02 = p[0].z + mz02 * deltaY;
+
+                for (; y < p[1].y; y += 1, x01 += mx01, z01 += mz01, x02 += mx02, z02 += mz02) {
+                    renderScanLine(x01, z01, x02, z02, y);
+                }
+
+                if (!floatEq(p[1].y, p[2].y)) {
+                    deltaY = y - p[1].y;
+                    var mx12 = (p[1].x - p[2].x) / (p[1].y - p[2].y);
+                    var x12 = p[1].x + mx12 * deltaY;
+                    var mz12 = (p[1].z - p[2].z) / (p[1].y - p[2].y);
+                    var z12 = p[1].z + mz12 * deltaY;
+
+                    for (; y <= p[2].y; y += 1, x12 += mx12, z12 += mz12, x02 += mx02, z02 += mz02) {
+                        renderScanLine(x12, z12, x02, z02, y);
+                    }
+                }
+            }
+            return this;
         }
     }
 }

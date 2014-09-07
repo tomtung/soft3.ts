@@ -37,9 +37,7 @@ function renderHowework1(rectData: string): CS580GL.Display {
 // ---- Homework 2 ----
 
 function renderHomework2(pot4Data: string): CS580GL.Display {
-    var display = new CS580GL.Display(256, 256).reset(defaultBackgroundPixel);
-
-    function parseVertex(textLine: string) {
+    function parseVertex(textLine: string): CS580GL.MeshVertex {
         var numbers = textLine.trim().split(/\s+/).map(s => parseFloat(s));
         return {
             position: new CS580GL.Vector3(numbers[0], numbers[1], numbers[2]),
@@ -60,17 +58,20 @@ function renderHomework2(pot4Data: string): CS580GL.Display {
         return new CS580GL.Color(0.95, 0.65, 0.88).multiplyScalar(coef);
     }
 
+    var display = new CS580GL.Display(256, 256).reset(defaultBackgroundPixel);
+    var renderer = new CS580GL.Renderer(display);
+
     var lines = pot4Data.trim().split("\r");
     for (var i = 0; i < lines.length; i += 4) {
         var v1 = parseVertex(lines[i + 1]);
         var v2 = parseVertex(lines[i + 2]);
         var v3 = parseVertex(lines[i + 3]);
 
-        var triangle = new CS580GL.Triangle(v1.position, v2.position, v3.position);
+        var triangle = new CS580GL.MeshTriangle(v1, v2, v3);
         var flatColor = simpleShading(v1.normal)
 
-        // TODO render it on display
-
+        renderer.flatColor = flatColor;
+        renderer.renderTriangle(triangle);
     }
 
     return display;

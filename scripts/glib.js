@@ -17,6 +17,7 @@ var __applyMixins = this.__applyMixins || function (derivedCtor, baseCtors) {
 * sometimes the suggested C-style C++ API doesn't make sense for JavaScript.
 *
 * Here's a comparison table between the suggested C++ API and JavaScript API:
+* ( Homework 1 )
 * - NewFrameBuffer:            the constructor of Display objects
 * - NewDisplay:                the constructor of Display objects
 * - FreeFrameBuffer:           unnecessary in JavaScript
@@ -24,7 +25,12 @@ var __applyMixins = this.__applyMixins || function (derivedCtor, baseCtors) {
 * - ClearDisplay:              Display.prototype.reset
 * - {Get|Set}DisplayPixel:     Display.prototype.pixelAt returns a PixelRef object, which supports get/set operation
 * - FlushDisplayToPPMFile:     Display.prototype.toNetpbm
-*
+* ( Homework 2 )
+* - NewRender:                 the constructor of Renderer objects
+* - FreeRender:                unnecessary in JavaScript
+* - BeginRender:               Display.prototype.reset
+* - PutAttribute:              Renderer.prototype.setAttributes
+* - PutTriangle:               Renderer.prototype.renderTriangle
 * @module CS580GL
 */
 var CS580GL;
@@ -151,6 +157,15 @@ var CS580GL;
             this.blue = this.blue * scalar;
             return this;
         };
+
+        Color.prototype.getHex = function () {
+            return (this.redUint8 << 16) | (this.greenUint8 << 8) | this.blueUint8;
+        };
+
+        Color.prototype.getHexString = function () {
+            // Smart implementatin borrowed from three.js
+            return ("000000" + this.getHex().toString(16)).slice(-6);
+        };
         return Color;
     })();
     CS580GL.Color = Color;
@@ -201,7 +216,7 @@ var CS580GL;
 
         Pixel.prototype.setColor = function (color) {
             this.redUint8 = color.redUint8;
-            this.greenUint8 = color.redUint8;
+            this.greenUint8 = color.greenUint8;
             this.blueUint8 = color.blueUint8;
             this.alphaUint8 = 0xff;
             return this;
@@ -411,6 +426,17 @@ var CS580GL;
             return v1.clone().dot(v2);
         };
 
+        Vector3.prototype.add = function (v) {
+            this.x += v.x;
+            this.y += v.y;
+            this.z += v.z;
+            return this;
+        };
+
+        Vector3.add = function (v1, v2) {
+            return v1.clone().add(v2);
+        };
+
         Vector3.prototype.divideScalar = function (scalar) {
             this.x /= scalar;
             this.y /= scalar;
@@ -470,17 +496,126 @@ var CS580GL;
     })();
     CS580GL.Vector2 = Vector2;
 
-    /** A Triangle object represents a geometric triangle specified by three vertices as Vector3 objects */
-    var Triangle = (function () {
-        function Triangle(a, b, c) {
-            if (typeof a === "undefined") { a = new Vector3(); }
-            if (typeof b === "undefined") { b = new Vector3(); }
-            if (typeof c === "undefined") { c = new Vector3(); }
+    
+
+    /** A TriangleFace object represents a triangle face in a triangle mesh */
+    var MeshTriangle = (function () {
+        function MeshTriangle(a, b, c) {
             this.a = a;
             this.b = b;
             this.c = c;
         }
-        return Triangle;
+        MeshTriangle.prototype.toVertexArray = function () {
+            return [this.a, this.b, this.c];
+        };
+        return MeshTriangle;
     })();
-    CS580GL.Triangle = Triangle;
+    CS580GL.MeshTriangle = MeshTriangle;
+
+    /** Render objects contructor */
+    var Renderer = (function () {
+        function Renderer(display) {
+            this.display = display;
+        }
+        Renderer.prototype.setAttributes = function (attributes) {
+            if (attributes.flatColor) {
+                this.flatColor = attributes.flatColor;
+            }
+            return this;
+        };
+
+        Renderer.prototype.renderPixel = function (x, y, z, color) {
+            if (z >= 0 && x >= 0 && y >= 0 && x < this.display.xres && y < this.display.yres) {
+                var pixelRef = this.display.pixelAt(x, y);
+                if (pixelRef.z > z) {
+                    pixelRef.setColor(color);
+                    pixelRef.z = z;
+                }
+            }
+            return this;
+        };
+
+        Renderer.prototype.renderTriangle = function (triangle) {
+            var _this = this;
+            function floatEq(x, y) {
+                return Math.abs(x - y) < 1e-6;
+            }
+
+            var renderScanLine = function (x1, z1, x2, z2, y) {
+                var tmp, m, x, z;
+                if (x1 > x2) {
+                    tmp = x1, x1 = x2, x2 = tmp;
+                    tmp = z1, z1 = z2, z2 = tmp;
+                }
+
+                if (x1 >= _this.display.xres || x2 < 0) {
+                    return;
+                }
+
+                m = (z1 - z2) / (x1 - x2);
+                x = Math.max(0, Math.round(x1)); // Note: Use round instead of ceil
+                z = z1 + m * (x - x1); // TODO why use int instead of float?
+                for (; x < Math.min(x2, _this.display.xres - 1); x += 1, z += m) {
+                    _this.renderPixel(x, y, Math.round(z), _this.flatColor);
+                }
+            };
+
+            var vertices = triangle.toVertexArray();
+            vertices.sort(function (l, r) {
+                return l.position.y - r.position.y;
+            });
+
+            var p = vertices.map(function (v) {
+                return v.position;
+            });
+
+            var y = Math.ceil(p[0].y);
+            var deltaY = y - p[0].y;
+
+            if (floatEq(p[0].y, p[1].y)) {
+                var mx02 = (p[0].x - p[2].x) / (p[0].y - p[2].y);
+                var x02 = p[0].x + mx02 * deltaY;
+                var mz02 = (p[0].z - p[2].z) / (p[0].y - p[2].y);
+                var z02 = p[0].z + mz02 * deltaY;
+
+                var mx12 = (p[1].x - p[2].x) / (p[1].y - p[2].y);
+                var x12 = p[1].x + mx12 * deltaY;
+                var mz12 = (p[1].z - p[2].z) / (p[1].y - p[2].y);
+                var z12 = p[1].z + mz12 * deltaY;
+
+                for (; y <= p[2].y; y += 1, x12 += mx12, z12 += mz12, x02 += mx02, z02 += mz02) {
+                    renderScanLine(x12, z12, x02, z02, y);
+                }
+            } else {
+                var mx01 = (p[0].x - p[1].x) / (p[0].y - p[1].y);
+                var x01 = p[0].x + mx01 * deltaY;
+                var mz01 = (p[0].z - p[1].z) / (p[0].y - p[1].y);
+                var z01 = p[0].z + mz01 * deltaY;
+
+                var mx02 = (p[0].x - p[2].x) / (p[0].y - p[2].y);
+                var x02 = p[0].x + mx02 * deltaY;
+                var mz02 = (p[0].z - p[2].z) / (p[0].y - p[2].y);
+                var z02 = p[0].z + mz02 * deltaY;
+
+                for (; y < p[1].y; y += 1, x01 += mx01, z01 += mz01, x02 += mx02, z02 += mz02) {
+                    renderScanLine(x01, z01, x02, z02, y);
+                }
+
+                if (!floatEq(p[1].y, p[2].y)) {
+                    deltaY = y - p[1].y;
+                    var mx12 = (p[1].x - p[2].x) / (p[1].y - p[2].y);
+                    var x12 = p[1].x + mx12 * deltaY;
+                    var mz12 = (p[1].z - p[2].z) / (p[1].y - p[2].y);
+                    var z12 = p[1].z + mz12 * deltaY;
+
+                    for (; y <= p[2].y; y += 1, x12 += mx12, z12 += mz12, x02 += mx02, z02 += mz02) {
+                        renderScanLine(x12, z12, x02, z02, y);
+                    }
+                }
+            }
+            return this;
+        };
+        return Renderer;
+    })();
+    CS580GL.Renderer = Renderer;
 })(CS580GL || (CS580GL = {}));

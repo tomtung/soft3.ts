@@ -35,8 +35,6 @@ function renderHowework1(rectData) {
 
 // ---- Homework 2 ----
 function renderHomework2(pot4Data) {
-    var display = new CS580GL.Display(256, 256).reset(defaultBackgroundPixel);
-
     function parseVertex(textLine) {
         var numbers = textLine.trim().split(/\s+/).map(function (s) {
             return parseFloat(s);
@@ -60,15 +58,20 @@ function renderHomework2(pot4Data) {
         return new CS580GL.Color(0.95, 0.65, 0.88).multiplyScalar(coef);
     }
 
+    var display = new CS580GL.Display(256, 256).reset(defaultBackgroundPixel);
+    var renderer = new CS580GL.Renderer(display);
+
     var lines = pot4Data.trim().split("\r");
     for (var i = 0; i < lines.length; i += 4) {
         var v1 = parseVertex(lines[i + 1]);
         var v2 = parseVertex(lines[i + 2]);
         var v3 = parseVertex(lines[i + 3]);
 
-        var triangle = new CS580GL.Triangle(v1.position, v2.position, v3.position);
+        var triangle = new CS580GL.MeshTriangle(v1, v2, v3);
         var flatColor = simpleShading(v1.normal);
-        // TODO render it on display
+
+        renderer.flatColor = flatColor;
+        renderer.renderTriangle(triangle);
     }
 
     return display;
