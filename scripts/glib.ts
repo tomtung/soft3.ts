@@ -125,6 +125,13 @@ module CS580GL {
             this.blueUint8 = value;
             return this;
         }
+
+        multiplyScalar(scalar: number): Color {
+            this.red = this.red * scalar;
+            this.green = this.green * scalar;
+            this.blue = this.blue * scalar;
+            return this;
+        }
     }
 
     /** A Pixel object represents a pixel with RGBA color and depth information. */
@@ -371,6 +378,10 @@ module CS580GL {
             return this.x * v.x + this.y * v.y + this.z * v.z;
         }
 
+        static dot(v1: Vector3, v2: Vector3): number {
+            return v1.clone().dot(v2);
+        }
+
         divideScalar(scalar: number): Vector3 {
             this.x /= scalar;
             this.y /= scalar;
@@ -422,6 +433,15 @@ module CS580GL {
             this.x = v.x;
             this.y = v.y;
             return this;
+        }
+    }
+
+    /** A Triangle object represents a geometric triangle specified by three vertices as Vector3 objects */
+    export class Triangle {
+        constructor(
+            public a: Vector3 = new Vector3(),
+            public b: Vector3 = new Vector3(),
+            public c: Vector3 = new Vector3()) {
         }
     }
 }

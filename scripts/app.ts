@@ -39,12 +39,39 @@ function renderHowework1(rectData: string): CS580GL.Display {
 function renderHomework2(pot4Data: string): CS580GL.Display {
     var display = new CS580GL.Display(256, 256).reset(defaultBackgroundPixel);
 
-    var lines = pot4Data.trim().split("\r");
-    for (var i = 0; i < lines.length; i += 4) {
-        
+    function parseVertex(textLine: string) {
+        var numbers = textLine.trim().split(/\s+/).map(s => parseFloat(s));
+        return {
+            position: new CS580GL.Vector3(numbers[0], numbers[1], numbers[2]),
+            normal: new CS580GL.Vector3(numbers[3], numbers[4], numbers[5]),
+            uv: new CS580GL.Vector2(numbers[6], numbers[7])
+        };
     }
 
-    // TODO
+    function simpleShading(normal: CS580GL.Vector3): CS580GL.Color {
+        var light = new CS580GL.Vector3(0.707, 0.5, 0.5);
+        var coef = CS580GL.Vector3.dot(normal, light);
+        if (coef < 0) {
+            coef = -coef;
+        }
+        if (coef > 1) {
+            coef > 1;
+        }
+        return new CS580GL.Color(0.95, 0.65, 0.88).multiplyScalar(coef);
+    }
+
+    var lines = pot4Data.trim().split("\r");
+    for (var i = 0; i < lines.length; i += 4) {
+        var v1 = parseVertex(lines[i + 1]);
+        var v2 = parseVertex(lines[i + 2]);
+        var v3 = parseVertex(lines[i + 3]);
+
+        var triangle = new CS580GL.Triangle(v1.position, v2.position, v3.position);
+        var flatColor = simpleShading(v1.normal)
+
+        // TODO render it on display
+
+    }
 
     return display;
 }

@@ -140,6 +140,13 @@ var CS580GL;
             this.blueUint8 = value;
             return this;
         };
+
+        Color.prototype.multiplyScalar = function (scalar) {
+            this.red = this.red * scalar;
+            this.green = this.green * scalar;
+            this.blue = this.blue * scalar;
+            return this;
+        };
         return Color;
     })();
     CS580GL.Color = Color;
@@ -396,6 +403,10 @@ var CS580GL;
             return this.x * v.x + this.y * v.y + this.z * v.z;
         };
 
+        Vector3.dot = function (v1, v2) {
+            return v1.clone().dot(v2);
+        };
+
         Vector3.prototype.divideScalar = function (scalar) {
             this.x /= scalar;
             this.y /= scalar;
@@ -454,4 +465,18 @@ var CS580GL;
         return Vector2;
     })();
     CS580GL.Vector2 = Vector2;
+
+    /** A Triangle object represents a geometric triangle specified by three vertices as Vector3 objects */
+    var Triangle = (function () {
+        function Triangle(a, b, c) {
+            if (typeof a === "undefined") { a = new Vector3(); }
+            if (typeof b === "undefined") { b = new Vector3(); }
+            if (typeof c === "undefined") { c = new Vector3(); }
+            this.a = a;
+            this.b = b;
+            this.c = c;
+        }
+        return Triangle;
+    })();
+    CS580GL.Triangle = Triangle;
 })(CS580GL || (CS580GL = {}));
