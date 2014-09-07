@@ -620,4 +620,3 @@ var CS580GL;
     })();
     CS580GL.Renderer = Renderer;
 })(CS580GL || (CS580GL = {}));
-//# sourceMappingURL=glib.js.map

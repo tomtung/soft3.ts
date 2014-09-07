@@ -132,4 +132,3 @@ window.onload = function () {
     renderSelection();
     selectElem.onchange = renderSelection;
 };
-//# sourceMappingURL=app.js.map
