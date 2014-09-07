@@ -519,17 +519,10 @@ module CS580GL {
         }
 
         renderTriangle(triangle: MeshTriangle): Renderer {
-            function floatEq(x: number, y: number): boolean {
-                return Math.abs(x - y) < 1e-6;
-            }
+            var floatEq = (x: number, y: number) => Math.abs(x - y) < 1e-6;
 
             var renderScanLine = (x1: number, z1: number, x2: number, z2: number, y: number) => {
-                var tmp: number, m: number, x: number, z: number;
-                if (x1 > x2) {
-                    tmp = x1, x1 = x2, x2 = tmp;
-                    tmp = z1, z1 = z2, z2 = tmp;
-                }
-
+                var number, m: number, x: number, z: number;
                 if (x1 >= this.display.xres || x2 < 0) {
                     return;
                 }
@@ -542,55 +535,67 @@ module CS580GL {
                 }
             }
 
-            var vertices = triangle.toVertexArray();
-            vertices.sort((l, r) => l.position.y - r.position.y);
+            // Sort vertices
+            var vertices = triangle.toVertexArray().sort((l, r) =>
+                !floatEq(l.position.y, r.position.y) ?
+                    l.position.y - r.position.y :
+                    l.position.x - r.position.x
+            );
+            var pos = vertices.map(v => v.position);
 
-            var p = vertices.map(v => v.position);
+            // Compute slopes dx/dy and dz/dy
+            var edgeSlopeXY = (vi: number, vj: number) => (pos[vi].x - pos[vj].x) / (pos[vi].y - pos[vj].y);
+            var mx01 = edgeSlopeXY(0, 1),
+                mx02 = edgeSlopeXY(0, 2),
+                mx12 = edgeSlopeXY(1, 2);
 
-            var y = Math.ceil(p[0].y);
-            var deltaY = y - p[0].y;
+            var edgeSlopeZY = (vi: number, vj: number) => (pos[vi].z - pos[vj].z) / (pos[vi].y - pos[vj].y);
+            var mz01 = edgeSlopeZY(0, 1),
+                mz02 = edgeSlopeZY(0, 2),
+                mz12 = edgeSlopeZY(1, 2);
 
-            if (floatEq(p[0].y, p[1].y)) {
-                var mx02 = (p[0].x - p[2].x) / (p[0].y - p[2].y);
-                var x02 = p[0].x + mx02 * deltaY;
-                var mz02 = (p[0].z - p[2].z) / (p[0].y - p[2].y);
-                var z02 = p[0].z + mz02 * deltaY;
+            // Initial scan line positions on each edge            
 
-                var mx12 = (p[1].x - p[2].x) / (p[1].y - p[2].y);
-                var x12 = p[1].x + mx12 * deltaY;
-                var mz12 = (p[1].z - p[2].z) / (p[1].y - p[2].y);
-                var z12 = p[1].z + mz12 * deltaY;
+            var edgeInitialX = (vi: number, mx: number) => pos[vi].x + mx * (Math.ceil(pos[vi].y) - pos[vi].y);
+            var edgeInitialZ = (vi: number, mz: number) => pos[vi].z + mz * (Math.ceil(pos[vi].y) - pos[vi].y);
 
-                for (; y <= p[2].y; y += 1, x12 += mx12, z12 += mz12, x02 += mx02, z02 += mz02) {
-                    renderScanLine(x12, z12, x02, z02, y);
-                }
-            } else {
-                var mx01 = (p[0].x - p[1].x) / (p[0].y - p[1].y);
-                var x01 = p[0].x + mx01 * deltaY;
-                var mz01 = (p[0].z - p[1].z) / (p[0].y - p[1].y);
-                var z01 = p[0].z + mz01 * deltaY;
+            var x01 = edgeInitialX(0, mx01),
+                x02 = edgeInitialX(0, mx02),
+                x12 = edgeInitialX(1, mx12),
+                z01 = edgeInitialZ(0, mz01),
+                z02 = edgeInitialZ(0, mz02),
+                z12 = edgeInitialZ(1, mz12);
 
-                var mx02 = (p[0].x - p[2].x) / (p[0].y - p[2].y);
-                var x02 = p[0].x + mx02 * deltaY;
-                var mz02 = (p[0].z - p[2].z) / (p[0].y - p[2].y);
-                var z02 = p[0].z + mz02 * deltaY;
+            var y = Math.ceil(pos[0].y);
 
-                for (; y < p[1].y; y += 1, x01 += mx01, z01 += mz01, x02 += mx02, z02 += mz02) {
+            var isMidVertexLeft = isFinite(mx01) && (mx01 < mx02);
+
+            // Helper function that advances the scan line
+            var upperAdvance = (): void => {
+                y += 1, x01 += mx01, z01 += mz01, x02 += mx02, z02 += mz02;
+            };
+            var lowerAdvance = (): void => {
+                y += 1, x12 += mx12, z12 += mz12, x02 += mx02, z02 += mz02;
+            }
+
+            if (isMidVertexLeft) {
+                for (; y < pos[1].y; upperAdvance()) {
                     renderScanLine(x01, z01, x02, z02, y);
                 }
 
-                if (!floatEq(p[1].y, p[2].y)) {
-                    deltaY = y - p[1].y;
-                    var mx12 = (p[1].x - p[2].x) / (p[1].y - p[2].y);
-                    var x12 = p[1].x + mx12 * deltaY;
-                    var mz12 = (p[1].z - p[2].z) / (p[1].y - p[2].y);
-                    var z12 = p[1].z + mz12 * deltaY;
+                for (; y <= pos[2].y; lowerAdvance()) {
+                    renderScanLine(x12, z12, x02, z02, y);
+                }
+            } else {
+                for (; y < pos[1].y; upperAdvance()) {
+                    renderScanLine(x02, z02, x01, z01, y);
+                }
 
-                    for (; y <= p[2].y; y += 1, x12 += mx12, z12 += mz12, x02 += mx02, z02 += mz02) {
-                        renderScanLine(x12, z12, x02, z02, y);
-                    }
+                for (; y <= pos[2].y; lowerAdvance()) {
+                    renderScanLine(x02, z02, x12, z12, y);
                 }
             }
+
             return this;
         }
     }
