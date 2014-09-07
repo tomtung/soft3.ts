@@ -72,13 +72,17 @@ module CS580GL {
             return new Color().setRGBUint8(redUint8, greenUint8, blueUint8);
         }
 
+        static channelValueToUint8(value: number): number {
+            return Math.round(clamp(value * 255, 0, 255));
+        }
+
         setRed(value: number): Color {
             this.red = value;
             return this;
         }
 
         get redUint8(): number {
-            return this.red * 255;
+            return Color.channelValueToUint8(this.red);
         }
 
         set redUint8(value: number) {
@@ -96,7 +100,7 @@ module CS580GL {
         }
 
         get greenUint8(): number {
-            return this.green * 255;
+            return Color.channelValueToUint8(this.green);
         }
 
         set greenUint8(value: number) {
@@ -114,7 +118,7 @@ module CS580GL {
         }
 
         get blueUint8(): number {
-            return this.blue * 255;
+            return Color.channelValueToUint8(this.blue);
         }
 
         set blueUint8(value: number) {

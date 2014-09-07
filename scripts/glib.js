@@ -75,6 +75,10 @@ var CS580GL;
             return new Color().setRGBUint8(redUint8, greenUint8, blueUint8);
         };
 
+        Color.channelValueToUint8 = function (value) {
+            return Math.round(clamp(value * 255, 0, 255));
+        };
+
         Color.prototype.setRed = function (value) {
             this.red = value;
             return this;
@@ -82,7 +86,7 @@ var CS580GL;
 
         Object.defineProperty(Color.prototype, "redUint8", {
             get: function () {
-                return this.red * 255;
+                return Color.channelValueToUint8(this.red);
             },
             set: function (value) {
                 this.red = value / 255;
@@ -104,7 +108,7 @@ var CS580GL;
 
         Object.defineProperty(Color.prototype, "greenUint8", {
             get: function () {
-                return this.green * 255;
+                return Color.channelValueToUint8(this.green);
             },
             set: function (value) {
                 this.green = value / 255;
@@ -126,7 +130,7 @@ var CS580GL;
 
         Object.defineProperty(Color.prototype, "blueUint8", {
             get: function () {
-                return this.blue * 255;
+                return Color.channelValueToUint8(this.blue);
             },
             set: function (value) {
                 this.blue = value / 255;
