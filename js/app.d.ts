@@ -170,8 +170,3 @@ declare module CS580GL {
         public renderTriangle(triangle: MeshTriangle): Renderer;
     }
 }
-declare var defaultBackgroundColor: CS580GL.Color;
-declare var defaultBackgroundPixel: CS580GL.Pixel;
-declare function renderHowework1(rectData: string): CS580GL.Display;
-declare function renderHomework2(pot4Data: string): CS580GL.Display;
-declare function loadTextFileAsync(url: string, callback: (string: any) => any): void;
