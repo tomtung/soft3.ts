@@ -1,9 +1,4 @@
-﻿/// <reference path="glib.ts" />
-
-//
-// 2014 Fall - CSCI 580 3D - Graphics Rendering
-// by Yubing Dong
-//
+﻿/// <reference path="glib/Renderer.ts" />
 
 var defaultBackgroundColor = CS580GL.Color.fromRGBUint8(123, 112, 96);
 var defaultBackgroundPixel = new CS580GL.Pixel().setColor(defaultBackgroundColor);
