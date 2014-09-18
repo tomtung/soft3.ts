@@ -101,15 +101,32 @@ declare module CS580GL {
     }
 }
 declare module CS580GL {
-    /** A Vector2 object represents a 2-D Vector */
-    class Vector2 {
-        public x: number;
-        public y: number;
-        constructor(x?: number, y?: number);
-        public setXY(x: number, y: number): Vector2;
-        public setX(value: number): Vector2;
-        public setY(value: number): Vector2;
-        public copyFrom(v: Vector2): Vector2;
+    /** A 4x4 Matix */
+    class Matrix4 {
+        /** A row-major array of matrix elements */
+        public elements: Float32Array;
+        /** Construct a 4x4 matrix from a row-major array of numbers */
+        constructor(elements: any);
+        /** Clone this matrix */
+        public clone(): Matrix4;
+        /** Copy content from another matrix */
+        public copyFrom(other: Matrix4): Matrix4;
+        /** Create an identity matrix */
+        static identity(): Matrix4;
+        /** Create a zero matrix */
+        static zeros(): Matrix4;
+        /** Multipy this matrix (left) to another matrix (right) */
+        public multiply(other: Matrix4): Matrix4;
+        /** Multiply two matrices and return a new matrix as the result */
+        static multiply(l: Matrix4, r: Matrix4): Matrix4;
+        /** Create a new translation matrix */
+        static makeTranslation(x: number, y: number, z: number): Matrix4;
+        /** Create a new rotation matrix for rotation around x-axis */
+        static makeRotationX(theta: number): Matrix4;
+        /** Create a new rotation matrix for rotation around y-axis */
+        static makeRotationY(theta: number): Matrix4;
+        /** Create a new rotation matrix for rotation around z-axis */
+        static makeRotationZ(theta: number): Matrix4;
     }
 }
 declare module CS580GL {
@@ -128,11 +145,62 @@ declare module CS580GL {
         static dot(v1: Vector3, v2: Vector3): number;
         public add(v: Vector3): Vector3;
         static add(v1: Vector3, v2: Vector3): Vector3;
+        public subtract(v: Vector3): Vector3;
+        static subtract(v1: Vector3, v2: Vector3): Vector3;
+        public cross(other: Vector3): Vector3;
+        static cross(v1: Vector3, v2: Vector3): Vector3;
         public divideScalar(scalar: number): Vector3;
+        /**
+        * Convert this vector to homogeneous coordinates (by appending a forth dimension with value 1),
+        * apply the matrix, and convert back to non-homogeneous coordinates
+        */
+        public applyAsHomogeneous(matrix: Matrix4): Vector3;
         public lengthSq(): number;
         public length(): number;
         public normalize(): Vector3;
         public clone(): Vector3;
+    }
+}
+declare module CS580GL {
+    /** A camera with perspective projection. The aspect ratio is always assumed to be 1. */
+    class Camera {
+        /** Camera position */
+        public position: Vector3;
+        /** Position of the target which the camera looks at */
+        public lookAtTarget: Vector3;
+        /** The up direction */
+        public up: Vector3;
+        /** Field of view, in radian */
+        public fov: number;
+        /** The look-at matrix, which does both tranlsation and rotation. */
+        public lookAtMatrix: Matrix4;
+        /** The perspective matrix. Note that z will be scaled into range [0, 1] */
+        public perspectiveMatrix: Matrix4;
+        constructor(/** Camera position */
+            position: Vector3, /** Position of the target which the camera looks at */
+            lookAtTarget: Vector3, /** The up direction */
+            up: Vector3, /** Field of view, in radian */
+            fov: number);
+        public setPosition(position: Vector3): Camera;
+        public setLookAtTarget(target: Vector3): Camera;
+        public setUpDirection(up: Vector3): Camera;
+        public setFov(fov: number): Camera;
+        /** Update the look-at matrix. Must be invoked if camera position, look-at target, or up vector is changed. */
+        public updateLookAtMatrix(): Camera;
+        /** Update the perspective matrix. Must be invoked if fov is changed. */
+        public updatePerspectiveMatrix(): Camera;
+    }
+}
+declare module CS580GL {
+    /** A Vector2 object represents a 2-D Vector */
+    class Vector2 {
+        public x: number;
+        public y: number;
+        constructor(x?: number, y?: number);
+        public setXY(x: number, y: number): Vector2;
+        public setX(value: number): Vector2;
+        public setY(value: number): Vector2;
+        public copyFrom(v: Vector2): Vector2;
     }
 }
 declare module CS580GL {

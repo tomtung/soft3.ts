@@ -1,4 +1,5 @@
 ﻿/// <reference path="Display.ts" />
+/// <reference path="Camera.ts" />
 /// <reference path="MeshTriangle.ts" />
 
 module CS580GL {
