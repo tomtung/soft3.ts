@@ -455,6 +455,16 @@ var CS580GL;
             ]);
         };
 
+        /** Create a new scale matrix */
+        Matrix4.makeScale = function (x, y, z) {
+            return new Matrix4([
+                x, 0, 0, 0,
+                0, y, 0, 0,
+                0, 0, z, 0,
+                0, 0, 0, 1
+            ]);
+        };
+
         /** Create a new rotation matrix for rotation around x-axis */
         Matrix4.makeRotationX = function (theta) {
             var s = Math.sin(theta);
@@ -628,30 +638,11 @@ var CS580GL;
             this.lookAtTarget = parameters.lookAtTarget;
             this.up = parameters.up;
             this.fov = parameters.fov;
+            this.updateLookAtMatrix().updatePerspectiveMatrix();
         }
-        Camera.prototype.setPosition = function (position) {
-            this.position.copyFrom(position);
-            return this;
-        };
-
-        Camera.prototype.setLookAtTarget = function (target) {
-            this.lookAtTarget.copyFrom(target);
-            return this;
-        };
-
-        Camera.prototype.setUpDirection = function (up) {
-            this.up.copyFrom(up);
-            return this;
-        };
-
-        Camera.prototype.setFov = function (fov) {
-            this.fov = fov;
-            return this;
-        };
-
         /**
         * Update the look-at matrix.
-        * Must be invoked if camera is used for the first time, or if camera position, look-at target, or up vector is changed.
+        * Must be invoked if camera position, look-at target, or up vector is changed.
         */
         Camera.prototype.updateLookAtMatrix = function () {
             var w = CS580GL.Vector3.subtract(this.position, this.lookAtTarget).normalize();
@@ -681,7 +672,7 @@ var CS580GL;
             return this;
         };
 
-        /** Update the perspective matrix. Must be invoked if camera is used for the first time, or if fov is changed. */
+        /** Update the perspective matrix. Must be invoked if fov is changed. */
         Camera.prototype.updatePerspectiveMatrix = function () {
             var dInv = Math.tan(this.fov / 2);
             this.perspectiveMatrix = new CS580GL.Matrix4([
@@ -692,11 +683,6 @@ var CS580GL;
             ]);
 
             return this;
-        };
-
-        /** Update the both look-at and perspective matrices. Must be invoked if camera is used for the first time, or if any parameter is changed. */
-        Camera.prototype.updateMatrices = function () {
-            return this.updateLookAtMatrix().updatePerspectiveMatrix();
         };
         return Camera;
     })();
@@ -767,17 +753,9 @@ var CS580GL;
             this.display = display;
             this.toWorldTransformationStack = [];
             this.accumulatedTransformation = CS580GL.Matrix4.identity();
+            this.updateToScreenTransformation();
         }
-        Renderer.prototype.setAttributes = function (attributes) {
-            if (attributes.flatColor) {
-                this.flatColor = attributes.flatColor;
-            }
-            if (attributes.camera) {
-                this.camera = attributes.camera;
-            }
-            return this;
-        };
-
+        /** Update the to-screen transformation matrix. Must be invoked if  display is changed. */
         Renderer.prototype.updateToScreenTransformation = function () {
             var halfX = this.display.xres / 2;
             var halfY = this.display.yres / 2;
@@ -790,6 +768,7 @@ var CS580GL;
             return this;
         };
 
+        /** Update the perspective matrix. Must be invoked if camera, display, or to-world transformations are changed. */
         Renderer.prototype.updateAccumulatedTransformation = function () {
             var _this = this;
             if (!this.camera) {
@@ -1002,31 +981,20 @@ var CS580GL;
 
         var renderer = new CS580GL.Renderer(display);
 
-        renderer.updateToScreenTransformation();
         renderer.camera = new CS580GL.Camera({
             position: new CS580GL.Vector3(13.2, -8.7, 14.8),
             lookAtTarget: new CS580GL.Vector3(0.8, 0.7, -4.5),
             up: new CS580GL.Vector3(-0.2, 1.0, 0),
             fov: 53.7 / 180 * Math.PI
-        }).updateMatrices();
-        renderer.toWorldTransformationStack.push(new CS580GL.Matrix4([
-            3.25, 0.0, 0.0, 0.0,
-            0.0, 3.25, 0.0, -3.25,
-            0.0, 0.0, 3.25, -3.5,
-            0.0, 0.0, 0.0, 1.0
-        ]));
-        renderer.toWorldTransformationStack.push(new CS580GL.Matrix4([
-            .866, 0.0, 0.5, 0.0,
-            0.0, 1.0, 0.0, 0.0,
-            -0.5, 0.0, .866, 0.0,
-            0.0, 0.0, 0.0, 1.0
-        ]));
-        renderer.toWorldTransformationStack.push(new CS580GL.Matrix4([
-            1.0, 0.0, 0.0, 0.0,
-            0.0, .7071, -.7071, 0.0,
-            0.0, .7071, .7071, 0.0,
-            0.0, 0.0, 0.0, 1.0
-        ]));
+        });
+
+        renderer.toWorldTransformationStack = [
+            CS580GL.Matrix4.makeTranslation(0, -3.25, -3.5),
+            CS580GL.Matrix4.makeRotationY(30 / 180 * Math.PI),
+            CS580GL.Matrix4.makeRotationX(45 / 180 * Math.PI),
+            CS580GL.Matrix4.makeScale(3.25, 3.25, 3.25)
+        ];
+
         renderer.updateAccumulatedTransformation();
 
         var triangles = parseTriangles(pot4Data);

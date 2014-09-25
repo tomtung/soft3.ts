@@ -17,18 +17,10 @@ module CS580GL {
         accumulatedTransformation: Matrix4 = Matrix4.identity();
 
         constructor(public display: Display) {
+            this.updateToScreenTransformation();
         }
 
-        setAttributes(attributes: IRenderAttributes): Renderer {
-            if (attributes.flatColor) {
-                this.flatColor = attributes.flatColor;
-            }
-            if (attributes.camera) {
-                this.camera = attributes.camera;
-            }
-            return this;
-        }
-
+        /** Update the to-screen transformation matrix. Must be invoked if  display is changed. */
         updateToScreenTransformation(): Renderer {
             var halfX = this.display.xres / 2;
             var halfY = this.display.yres / 2;
@@ -41,6 +33,7 @@ module CS580GL {
             return this;
         }
 
+        /** Update the perspective matrix. Must be invoked if camera, display, or to-world transformations are changed. */
         updateAccumulatedTransformation(): Renderer {
             if (!this.camera) {
                 this.accumulatedTransformation = Matrix4.identity();

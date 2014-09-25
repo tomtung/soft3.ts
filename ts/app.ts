@@ -90,32 +90,21 @@
         var display = new CS580GL.Display(256, 256).reset(defaultBackgroundPixel);
 
         var renderer = new CS580GL.Renderer(display);
-
-        renderer.updateToScreenTransformation();
+        
         renderer.camera = new CS580GL.Camera({
             position: new CS580GL.Vector3(13.2, -8.7, 14.8),
             lookAtTarget: new CS580GL.Vector3(0.8, 0.7, -4.5),
             up: new CS580GL.Vector3(-0.2, 1.0, 0),
             fov: 53.7 / 180 * Math.PI
-        }).updateMatrices();
-        renderer.toWorldTransformationStack.push(new CS580GL.Matrix4([
-            3.25, 0.0, 0.0, 0.0,
-            0.0, 3.25, 0.0, -3.25,
-            0.0, 0.0, 3.25, -3.5,
-            0.0, 0.0, 0.0, 1.0
-        ]));
-        renderer.toWorldTransformationStack.push(new CS580GL.Matrix4([
-            .866, 0.0, 0.5, 0.0,
-            0.0, 1.0, 0.0, 0.0,
-            -0.5, 0.0, .866, 0.0,
-            0.0, 0.0, 0.0, 1.0
-        ]));
-        renderer.toWorldTransformationStack.push(new CS580GL.Matrix4([
-            1.0, 0.0, 0.0, 0.0,
-            0.0, .7071, -.7071, 0.0,
-            0.0, .7071, .7071, 0.0,
-            0.0, 0.0, 0.0, 1.0 
-        ]));
+        });
+
+        renderer.toWorldTransformationStack = [
+            CS580GL.Matrix4.makeTranslation(0, -3.25, -3.5),
+            CS580GL.Matrix4.makeRotationY(30 / 180 * Math.PI),
+            CS580GL.Matrix4.makeRotationX(45 / 180 * Math.PI),
+            CS580GL.Matrix4.makeScale(3.25, 3.25, 3.25)
+        ];
+
         renderer.updateAccumulatedTransformation();
 
         var triangles = parseTriangles(pot4Data);

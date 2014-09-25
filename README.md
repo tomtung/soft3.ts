@@ -22,5 +22,5 @@ This engine is implemented from scratch using [TypeScript](http://www.typescript
 |	`GzNewRender`	|	Constructor `Renderer`	|
 |	`GzFreeRender`	|	(Unnecessary)	|
 |	`GzBeginRender`	|	`Display.prototype.reset`	|
-|	`GzPutAttribute`	|	`Renderer.prototype.setAttributes`	|
+|	`GzPutAttribute`	|	Directly set field values of a `Renderer` object.	|
 |	`GzPutTriangle`	|	`Renderer.prototype.renderTriangle`	|

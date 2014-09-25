@@ -35,31 +35,12 @@ module CS580GL {
             this.lookAtTarget = parameters.lookAtTarget;
             this.up = parameters.up;
             this.fov = parameters.fov;
-        }
-
-        setPosition(position: Vector3): Camera {
-            this.position.copyFrom(position);
-            return this;
-        }
-
-        setLookAtTarget(target: Vector3): Camera {
-            this.lookAtTarget.copyFrom(target);
-            return this;
-        }
-
-        setUpDirection(up: Vector3) {
-            this.up.copyFrom(up);
-            return this;
-        }
-
-        setFov(fov: number) {
-            this.fov = fov;
-            return this;
+            this.updateLookAtMatrix().updatePerspectiveMatrix();
         }
 
         /**
          * Update the look-at matrix.
-         * Must be invoked if camera is used for the first time, or if camera position, look-at target, or up vector is changed.
+         * Must be invoked if camera position, look-at target, or up vector is changed.
          */
         public updateLookAtMatrix(): Camera {
             var w = Vector3.subtract(this.position, this.lookAtTarget).normalize();
@@ -89,7 +70,7 @@ module CS580GL {
             return this;
         }
 
-        /** Update the perspective matrix. Must be invoked if camera is used for the first time, or if fov is changed. */
+        /** Update the perspective matrix. Must be invoked if fov is changed. */
         public updatePerspectiveMatrix(): Camera {
             var dInv = Math.tan(this.fov / 2);
             this.perspectiveMatrix = new Matrix4([
@@ -101,11 +82,5 @@ module CS580GL {
 
             return this;
         }
-
-        /** Update the both look-at and perspective matrices. Must be invoked if camera is used for the first time, or if any parameter is changed. */
-        public updateMatrices(): Camera {
-            return this.updateLookAtMatrix().updatePerspectiveMatrix();
-        }
-
     }
 }

@@ -123,6 +123,8 @@ declare module CS580GL {
         static multiply(l: Matrix4, r: Matrix4): Matrix4;
         /** Create a new translation matrix */
         static makeTranslation(x: number, y: number, z: number): Matrix4;
+        /** Create a new scale matrix */
+        static makeScale(x: number, y: number, z: number): Matrix4;
         /** Create a new rotation matrix for rotation around x-axis */
         static makeRotationX(theta: number): Matrix4;
         /** Create a new rotation matrix for rotation around y-axis */
@@ -185,19 +187,13 @@ declare module CS580GL {
         /** Field of view, in radian */
         public fov: number;
         constructor(parameters: ICameraParameters);
-        public setPosition(position: Vector3): Camera;
-        public setLookAtTarget(target: Vector3): Camera;
-        public setUpDirection(up: Vector3): Camera;
-        public setFov(fov: number): Camera;
         /**
         * Update the look-at matrix.
-        * Must be invoked if camera is used for the first time, or if camera position, look-at target, or up vector is changed.
+        * Must be invoked if camera position, look-at target, or up vector is changed.
         */
         public updateLookAtMatrix(): Camera;
-        /** Update the perspective matrix. Must be invoked if camera is used for the first time, or if fov is changed. */
+        /** Update the perspective matrix. Must be invoked if fov is changed. */
         public updatePerspectiveMatrix(): Camera;
-        /** Update the both look-at and perspective matrices. Must be invoked if camera is used for the first time, or if any parameter is changed. */
-        public updateMatrices(): Camera;
     }
 }
 declare module CS580GL {
@@ -247,8 +243,9 @@ declare module CS580GL {
         public toScreenTransformation: Matrix4;
         public accumulatedTransformation: Matrix4;
         constructor(display: Display);
-        public setAttributes(attributes: IRenderAttributes): Renderer;
+        /** Update the to-screen transformation matrix. Must be invoked if  display is changed. */
         public updateToScreenTransformation(): Renderer;
+        /** Update the perspective matrix. Must be invoked if camera, display, or to-world transformations are changed. */
         public updateAccumulatedTransformation(): Renderer;
         public renderPixel(x: number, y: number, z: number, color: Color): Renderer;
         public renderScreenTriangle(triangle: MeshTriangle): Renderer;

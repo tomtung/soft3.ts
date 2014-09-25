@@ -94,6 +94,16 @@
             ]);
         }
 
+        /** Create a new scale matrix */
+        static makeScale(x: number, y: number, z: number): Matrix4 {
+            return new Matrix4([
+                x, 0, 0, 0,
+                0, y, 0, 0,
+                0, 0, z, 0,
+                0, 0, 0, 1
+            ]);
+        }
+
         /** Create a new rotation matrix for rotation around x-axis */
         static makeRotationX(theta: number): Matrix4 {
             var s = Math.sin(theta);
