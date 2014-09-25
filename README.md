@@ -24,3 +24,10 @@ This engine is implemented from scratch using [TypeScript](http://www.typescript
 |	`GzBeginRender`	|	`Display.prototype.reset`	|
 |	`GzPutAttribute`	|	Directly set field values of a `Renderer` object.	|
 |	`GzPutTriangle`	|	`Renderer.prototype.renderTriangle`	|
+|	`GzRotXMat`	|	`Matrix4.prototype.makeRotationX`	|
+|	`GzRotYMat`	|	`Matrix4.prototype.makeRotationY`	|
+|	`GzRotZMat`	|	`Matrix4.prototype.makeRotationZ`	|
+|	`GzTrxMat`	|	`Matrix4.prototype.makeTranslation`	|
+|	`GzScaleMat`	|	`Matrix4.prototype.makeScale`	|
+|	`GzPutCamera`	|	Set `camera` property on a `Renderer` object with a `Camera` object	|
+|	`GzPushMatrix`, `GzPushMatrix`	|	Modify `toWorldTransformationStack` property on a `Renderer` object	|
