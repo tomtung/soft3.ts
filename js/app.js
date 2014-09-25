@@ -1018,9 +1018,10 @@ var CS580GL;
 
             flush(display, toImageFile);
 
-            renderer.camera.position.applyAsHomogeneous(CS580GL.Matrix4.makeRotationY(1 / 180 * Math.PI));
-            renderer.camera.updateLookAtMatrix();
-            renderer.updateAccumulatedTransformation();
+            if (parameters.rotateCamera) {
+                renderer.camera.position.applyAsHomogeneous(CS580GL.Matrix4.makeRotationY(1 / 180 * Math.PI));
+                renderer.camera.updateLookAtMatrix();
+            }
 
             requestAnimationFrame(function () {
                 return renderLoop();
@@ -1047,6 +1048,18 @@ var CS580GL;
         var downloadAnchorElem = document.getElementById("download");
         var selectElem = document.getElementById("select");
 
+        var hw3ControlsElem = document.getElementById("hw3-controls");
+        var rotateCameraElem = document.getElementById("camera-rotation");
+        var translateXElem = document.getElementById("translate-x");
+        var translateYElem = document.getElementById("translate-y");
+        var translateZElem = document.getElementById("translate-z");
+        var rotateXElem = document.getElementById("rotate-x");
+        var rotateYElem = document.getElementById("rotate-y");
+        var rotateZElem = document.getElementById("rotate-z");
+        var scaleXElem = document.getElementById("scale-x");
+        var scaleYElem = document.getElementById("scale-y");
+        var scaleZElem = document.getElementById("scale-z");
+
         // Utility function for flushing the Display into both the Canvas and a PPM file
         var flush = function (display, toImageFile) {
             if (typeof toImageFile === "undefined") { toImageFile = false; }
@@ -1065,6 +1078,8 @@ var CS580GL;
         var renderSelection = function () {
             URL.revokeObjectURL(downloadAnchorElem.href);
             downloadAnchorElem.href = "#";
+
+            hw3ControlsElem.style.visibility = selectElem.value == "hw3" ? "visible" : "collapse";
 
             switch (selectElem.value) {
                 case "hw1":
@@ -1086,10 +1101,23 @@ var CS580GL;
 
                     var getParameters = function () {
                         return {
-                            translate: { x: 0, y: -3.25, z: -3.5 },
-                            rotate: { x: 45 / 180 * Math.PI, y: 30 / 180 * Math.PI, z: 0 },
-                            scale: { x: 3.25, y: 3.25, z: 3.25 },
-                            isCurrent: selectElem.value == "hw3"
+                            translate: {
+                                x: parseFloat(translateXElem.value),
+                                y: parseFloat(translateYElem.value),
+                                z: parseFloat(translateZElem.value)
+                            },
+                            rotate: {
+                                x: parseFloat(rotateXElem.value) / 180 * Math.PI,
+                                y: parseFloat(rotateYElem.value) / 180 * Math.PI,
+                                z: parseFloat(rotateZElem.value) / 180 * Math.PI
+                            },
+                            scale: {
+                                x: parseFloat(scaleXElem.value),
+                                y: parseFloat(scaleYElem.value),
+                                z: parseFloat(scaleZElem.value)
+                            },
+                            isCurrent: selectElem.value == "hw3",
+                            rotateCamera: rotateCameraElem.checked
                         };
                     };
 
@@ -1107,3 +1135,7 @@ var CS580GL;
         selectElem.onchange = renderSelection;
     };
 })();
+
+function onInputChange(inputElem) {
+    document.getElementById(inputElem.id + "-output").value = inputElem.value;
+}

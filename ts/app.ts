@@ -137,9 +137,10 @@
 
             flush(display, toImageFile);
 
-            renderer.camera.position.applyAsHomogeneous(CS580GL.Matrix4.makeRotationY(1 / 180 * Math.PI));
-            renderer.camera.updateLookAtMatrix();
-            renderer.updateAccumulatedTransformation();
+            if (parameters.rotateCamera) {
+                renderer.camera.position.applyAsHomogeneous(CS580GL.Matrix4.makeRotationY(1 / 180 * Math.PI));
+                renderer.camera.updateLookAtMatrix();
+            }
 
             requestAnimationFrame(() => renderLoop());
         }
@@ -164,6 +165,18 @@
         var downloadAnchorElem = <HTMLAnchorElement> document.getElementById("download");
         var selectElem = <HTMLSelectElement> document.getElementById("select");
 
+        var hw3ControlsElem = <HTMLDivElement> document.getElementById("hw3-controls");
+        var rotateCameraElem = <HTMLInputElement> document.getElementById("camera-rotation");
+        var translateXElem = <HTMLInputElement> document.getElementById("translate-x");
+        var translateYElem = <HTMLInputElement> document.getElementById("translate-y");
+        var translateZElem = <HTMLInputElement> document.getElementById("translate-z");
+        var rotateXElem = <HTMLInputElement> document.getElementById("rotate-x");
+        var rotateYElem = <HTMLInputElement> document.getElementById("rotate-y");
+        var rotateZElem = <HTMLInputElement> document.getElementById("rotate-z");
+        var scaleXElem = <HTMLInputElement> document.getElementById("scale-x");
+        var scaleYElem = <HTMLInputElement> document.getElementById("scale-y");
+        var scaleZElem = <HTMLInputElement> document.getElementById("scale-z");
+
         // Utility function for flushing the Display into both the Canvas and a PPM file
         var flush = (display: CS580GL.Display, toImageFile: boolean = false) => {
             //display.reset(defaultBackgroundPixel); // remove this would be better, but wrong
@@ -181,6 +194,8 @@
         var renderSelection = () => {
             URL.revokeObjectURL(downloadAnchorElem.href);
             downloadAnchorElem.href = "#";
+
+            hw3ControlsElem.style.visibility = selectElem.value == "hw3" ? "visible" : "collapse";
 
             switch (selectElem.value) {
             case "hw1":
@@ -202,10 +217,23 @@
 
                 var getParameters = () => {
                     return {
-                        translate: { x: 0, y: -3.25, z: -3.5 },
-                        rotate: { x: 45 / 180 * Math.PI, y: 30 / 180 * Math.PI, z: 0 },
-                        scale: { x: 3.25, y: 3.25, z: 3.25 },
-                        isCurrent: selectElem.value == "hw3"
+                        translate: {
+                            x: parseFloat(translateXElem.value),
+                            y: parseFloat(translateYElem.value),
+                            z: parseFloat(translateZElem.value)
+                        },
+                        rotate: {
+                            x: parseFloat(rotateXElem.value) / 180 * Math.PI,
+                            y: parseFloat(rotateYElem.value) / 180 * Math.PI,
+                            z: parseFloat(rotateZElem.value) / 180 * Math.PI,
+                        },
+                        scale: {
+                            x: parseFloat(scaleXElem.value),
+                            y: parseFloat(scaleYElem.value),
+                            z: parseFloat(scaleZElem.value)
+                        },
+                        isCurrent: selectElem.value == "hw3",
+                        rotateCamera: rotateCameraElem.checked
                     };
                 };
 
@@ -223,3 +251,7 @@
         selectElem.onchange = renderSelection;
     };
 })();
+
+function onInputChange(inputElem: HTMLInputElement) {
+    document.getElementById(inputElem.id + "-output").value = inputElem.value;
+}

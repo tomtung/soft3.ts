@@ -252,3 +252,4 @@ declare module CS580GL {
         public renderTriangle(triangle: MeshTriangle): Renderer;
     }
 }
+declare function onInputChange(inputElem: HTMLInputElement): void;
