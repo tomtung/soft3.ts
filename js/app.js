@@ -916,7 +916,7 @@ var CS580GL;
 
         rectData.trim().split("\n").forEach(renderRectangle);
 
-        flush(display);
+        flush(display, true);
     }
 
     // Helper function for Homework 2 & 3: flat shading
@@ -972,12 +972,12 @@ var CS580GL;
             renderer.renderScreenTriangle(triangles[i]);
         }
 
-        flush(display);
+        flush(display, true);
     }
 
     // ---- Homework 3 ----
     function renderHomework3(potData, getParameters, flush) {
-        var display = new CS580GL.Display(256, 256).reset(defaultBackgroundPixel);
+        var display = new CS580GL.Display(256, 256);
 
         var renderer = new CS580GL.Renderer(display);
 
@@ -988,27 +988,46 @@ var CS580GL;
             fov: 53.7 / 180 * Math.PI
         });
 
-        var parameters = getParameters();
-        renderer.toWorldTransformationStack = [
-            CS580GL.Matrix4.makeTranslation(parameters.translate.x, parameters.translate.y, parameters.translate.z),
-            CS580GL.Matrix4.makeRotationZ(parameters.rotate.z),
-            CS580GL.Matrix4.makeRotationY(parameters.rotate.y),
-            CS580GL.Matrix4.makeRotationX(parameters.rotate.x),
-            CS580GL.Matrix4.makeScale(parameters.scale.x, parameters.scale.y, parameters.scale.z)
-        ];
+        var renderLoop = function (toImageFile) {
+            if (typeof toImageFile === "undefined") { toImageFile = false; }
+            var parameters = getParameters();
 
-        renderer.updateAccumulatedTransformation();
+            if (!parameters.isCurrent) {
+                return;
+            }
 
-        var triangles = parseTriangles(potData);
-        for (var i = 0; i < triangles.length; i += 1) {
-            var shadingNormal = triangles[i].a.normal.clone();
-            shadingNormal.setZ(-shadingNormal.z);
-            renderer.flatColor = simpleShading(shadingNormal);
+            display.reset(defaultBackgroundPixel);
+            renderer.toWorldTransformationStack = [
+                CS580GL.Matrix4.makeTranslation(parameters.translate.x, parameters.translate.y, parameters.translate.z),
+                CS580GL.Matrix4.makeRotationZ(parameters.rotate.z),
+                CS580GL.Matrix4.makeRotationY(parameters.rotate.y),
+                CS580GL.Matrix4.makeRotationX(parameters.rotate.x),
+                CS580GL.Matrix4.makeScale(parameters.scale.x, parameters.scale.y, parameters.scale.z)
+            ];
 
-            renderer.renderTriangle(triangles[i]);
-        }
+            renderer.updateAccumulatedTransformation();
 
-        flush(display);
+            var triangles = parseTriangles(potData);
+            for (var i = 0; i < triangles.length; i += 1) {
+                var shadingNormal = triangles[i].a.normal.clone();
+                shadingNormal.setZ(-shadingNormal.z);
+                renderer.flatColor = simpleShading(shadingNormal);
+
+                renderer.renderTriangle(triangles[i]);
+            }
+
+            flush(display, toImageFile);
+
+            renderer.camera.position.applyAsHomogeneous(CS580GL.Matrix4.makeRotationY(1 / 180 * Math.PI));
+            renderer.camera.updateLookAtMatrix();
+            renderer.updateAccumulatedTransformation();
+
+            requestAnimationFrame(function () {
+                return renderLoop();
+            });
+        };
+
+        renderLoop(true);
     }
 
     // Utility function for loading text file content
@@ -1028,13 +1047,10 @@ var CS580GL;
         var downloadAnchorElem = document.getElementById("download");
         var selectElem = document.getElementById("select");
 
-        downloadAnchorElem.onclick = function () {
-            return alert("test!");
-        };
-
         // Utility function for flushing the Display into both the Canvas and a PPM file
         var flush = function (display, toImageFile) {
             if (typeof toImageFile === "undefined") { toImageFile = false; }
+            //display.reset(defaultBackgroundPixel); // remove this would be better, but wrong
             display.drawOnCanvas(canvasElem);
 
             if (toImageFile) {
@@ -1072,7 +1088,8 @@ var CS580GL;
                         return {
                             translate: { x: 0, y: -3.25, z: -3.5 },
                             rotate: { x: 45 / 180 * Math.PI, y: 30 / 180 * Math.PI, z: 0 },
-                            scale: { x: 3.25, y: 3.25, z: 3.25 }
+                            scale: { x: 3.25, y: 3.25, z: 3.25 },
+                            isCurrent: selectElem.value == "hw3"
                         };
                     };
 
