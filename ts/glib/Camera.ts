@@ -2,6 +2,13 @@
 /// <reference path="Matrix4.ts" />
 
 module CS580GL {
+    export interface ICameraParameters {
+        position: Vector3;
+        lookAtTarget: Vector3;
+        up: Vector3;
+        fov: number;
+    };
+
     /** A camera with perspective projection. The aspect ratio is always assumed to be 1. */
     export class Camera {
 
@@ -11,44 +18,49 @@ module CS580GL {
         /** The perspective matrix. Note that z will be scaled into range [0, 1] */
         public perspectiveMatrix: Matrix4 = Matrix4.zeros();
 
-        constructor(
-            //
-            /** Camera position */
-            public position: Vector3,
-            //
-            /** Position of the target which the camera looks at */
-            public lookAtTarget: Vector3,
-            //
-            /** The up direction */
-            public up: Vector3,
-            //
-            /** Field of view, in radian */
-            public fov: number
-        ) {
-            this.updateLookAtMatrix().updatePerspectiveMatrix();
+        /** Camera position */
+        position: Vector3;
+
+        /** Position of the target which the camera looks at */
+        lookAtTarget: Vector3;
+
+        /** The up direction */
+        up: Vector3;
+
+        /** Field of view, in radian */
+        fov: number;
+
+        constructor(parameters: ICameraParameters) {
+            this.position = parameters.position;
+            this.lookAtTarget = parameters.lookAtTarget;
+            this.up = parameters.up;
+            this.fov = parameters.fov;
         }
 
         setPosition(position: Vector3): Camera {
             this.position.copyFrom(position);
-            return this.updateLookAtMatrix();
+            return this;
         }
 
         setLookAtTarget(target: Vector3): Camera {
             this.lookAtTarget.copyFrom(target);
-            return this.updateLookAtMatrix();
+            return this;
         }
 
         setUpDirection(up: Vector3) {
             this.up.copyFrom(up);
-            return this.updateLookAtMatrix();
+            return this;
         }
 
         setFov(fov: number) {
             this.fov = fov;
-            return this.updatePerspectiveMatrix();
+            return this;
         }
 
-        /** Update the look-at matrix. Must be invoked if camera position, look-at target, or up vector is changed. */
+        /**
+         * Update the look-at matrix.
+         * Must be invoked if camera is used for the first time, or if camera position, look-at target, or up vector is changed.
+         */
         public updateLookAtMatrix(): Camera {
             var w = Vector3.subtract(this.position, this.lookAtTarget).normalize();
             
@@ -70,23 +82,29 @@ module CS580GL {
             this.lookAtMatrix = new Matrix4([
                 u.x, u.y, u.z, -Vector3.dot(u, this.position),
                 v.x, v.y, v.z, -Vector3.dot(v, this.position),
-                w.x, w.y, w.z, -Vector3.dot(w, this.position)
+                w.x, w.y, w.z, -Vector3.dot(w, this.position),
+                0, 0, 0, 1
             ]);
 
             return this;
         }
 
-        /** Update the perspective matrix. Must be invoked if fov is changed. */
+        /** Update the perspective matrix. Must be invoked if camera is used for the first time, or if fov is changed. */
         public updatePerspectiveMatrix(): Camera {
-            var dInv = Math.tan(this.fov);
+            var dInv = Math.tan(this.fov / 2);
             this.perspectiveMatrix = new Matrix4([
                 1, 0, 0, 0,
                 0, 1, 0, 0,
                 0, 0, dInv, 0,
-                0, 0, dInv, 1
+                0, 0, -dInv, 1
             ]);
 
             return this;
+        }
+
+        /** Update the both look-at and perspective matrices. Must be invoked if camera is used for the first time, or if any parameter is changed. */
+        public updateMatrices(): Camera {
+            return this.updateLookAtMatrix().updatePerspectiveMatrix();
         }
 
     }

@@ -3,21 +3,57 @@
 /// <reference path="MeshTriangle.ts" />
 
 module CS580GL {
-    export interface RenderAttributes {
-        flatColor?: Color
+    export interface IRenderAttributes {
+        flatColor?: Color;
+        camera? : Camera;
     }
 
     /** Render objects contructor */
     export class Renderer {
         flatColor: Color;
+        camera: Camera;
+        toWorldTransformationStack: Matrix4[] = [];
+        toScreenTransformation: Matrix4;
+        accumulatedTransformation: Matrix4 = Matrix4.identity();
 
         constructor(public display: Display) {
         }
 
-        setAttributes(attributes: RenderAttributes): Renderer {
+        setAttributes(attributes: IRenderAttributes): Renderer {
             if (attributes.flatColor) {
                 this.flatColor = attributes.flatColor;
             }
+            if (attributes.camera) {
+                this.camera = attributes.camera;
+            }
+            return this;
+        }
+
+        updateToScreenTransformation(): Renderer {
+            var halfX = this.display.xres / 2;
+            var halfY = this.display.yres / 2;
+            this.toScreenTransformation = new Matrix4([
+                halfX, 0, 0, halfX,
+                0, -halfY, 0, halfY,
+                0, 0, -Display.Z_MAX, 0,
+                0, 0, 0, 1
+            ]);
+            return this;
+        }
+
+        updateAccumulatedTransformation(): Renderer {
+            if (!this.camera) {
+                this.accumulatedTransformation = Matrix4.identity();
+            } else {
+                this.accumulatedTransformation.
+                    copyFrom(this.toScreenTransformation).
+                    multiply(this.camera.perspectiveMatrix).
+                    multiply(this.camera.lookAtMatrix);
+                this.toWorldTransformationStack.forEach(m => {
+                    this.accumulatedTransformation.multiply(m);
+                });
+            }
+
             return this;
         }
 
@@ -32,7 +68,7 @@ module CS580GL {
             return this;
         }
 
-        renderTriangle(triangle: MeshTriangle): Renderer {
+        renderScreenTriangle(triangle: MeshTriangle): Renderer {
             var floatEq = (x: number, y: number) => Math.abs(x - y) < 1e-6;
 
             var renderScanLine = (x1: number, z1: number, x2: number, z2: number, y: number) => {
@@ -43,7 +79,7 @@ module CS580GL {
 
                 m = (z1 - z2) / (x1 - x2);
                 x = Math.max(0, Math.round(x1)); // Note: Use round instead of ceil
-                z = z1 + m * (x - x1); // TODO why use int instead of float?
+                z = z1 + m * (x - x1);
                 for (; x < Math.min(x2, this.display.xres - 1); x += 1, z += m) {
                     this.renderPixel(x, y, Math.round(z), this.flatColor);
                 }
@@ -54,7 +90,7 @@ module CS580GL {
                 !floatEq(l.position.y, r.position.y) ?
                 l.position.y - r.position.y :
                 l.position.x - r.position.x
-                );
+            );
             var pos = vertices.map(v => v.position);
 
             // Compute slopes dx/dy and dz/dy
@@ -112,5 +148,16 @@ module CS580GL {
 
             return this;
         }
-    } 
+
+        renderTriangle(triangle: MeshTriangle): Renderer {
+            // Note that normal and texture are ignored for the moement
+            var screenTriangle = new MeshTriangle(
+                { position: triangle.a.position.clone().applyAsHomogeneous(this.accumulatedTransformation) },
+                { position: triangle.b.position.clone().applyAsHomogeneous(this.accumulatedTransformation) },
+                { position: triangle.c.position.clone().applyAsHomogeneous(this.accumulatedTransformation) }
+            );
+            this.renderScreenTriangle(screenTriangle);
+            return this;
+        }
+    }
 }

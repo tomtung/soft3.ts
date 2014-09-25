@@ -321,7 +321,7 @@ var CS580GL;
                 greenUint8: 0,
                 blueUint8: 0,
                 alphaUint8: 0xff,
-                z: 0x7fffffff
+                z: Display.Z_MAX
             }); }
             for (var i = 0; i < this.rgbaBuffer.length; i += 4) {
                 this.rgbaBuffer[i] = pixel.redUint8;
@@ -362,6 +362,7 @@ var CS580GL;
 
             return new Blob([result], { type: 'image/x-portable-anymap' });
         };
+        Display.Z_MAX = 0x7fffffff;
         return Display;
     })();
     CS580GL.Display = Display;
@@ -376,6 +377,11 @@ var CS580GL;
             this.elements = new Float32Array(16);
             this.elements.set(elements);
         }
+        Matrix4.prototype.toString = function () {
+            var e = this.elements;
+            return "[" + e[0] + "\t" + e[1] + "\t" + e[2] + "\t" + e[3] + ";\n" + e[4] + "\t" + e[5] + "\t" + e[6] + "\t" + e[7] + ";\n" + e[8] + "\t" + e[9] + "\t" + e[10] + "\t" + e[11] + ";\n" + e[12] + "\t" + e[13] + "\t" + e[14] + "\t" + e[15] + "]";
+        };
+
         /** Clone this matrix */
         Matrix4.prototype.clone = function () {
             return new Matrix4(this.elements);
@@ -569,9 +575,10 @@ var CS580GL;
         };
 
         Vector3.prototype.divideScalar = function (scalar) {
-            this.x /= scalar;
-            this.y /= scalar;
-            this.z /= scalar;
+            var scalarInv = 1 / scalar;
+            this.x *= scalarInv;
+            this.y *= scalarInv;
+            this.z *= scalarInv;
             return this;
         };
 
@@ -582,10 +589,7 @@ var CS580GL;
         Vector3.prototype.applyAsHomogeneous = function (matrix) {
             var e = matrix.elements;
             var wInv = 1 / (e[12] * this.x + e[13] * this.y + e[14] * this.z + e[15]);
-            this.x = wInv * (e[0] * this.x + e[1] * this.y + e[2] * this.z + e[3]);
-            this.y = wInv * (e[4] * this.x + e[5] * this.y + e[6] * this.z + e[7]);
-            this.z = wInv * (e[8] * this.x + e[9] * this.y + e[10] * this.z + e[11]);
-            return this;
+            return this.setXYZ(wInv * (e[0] * this.x + e[1] * this.y + e[2] * this.z + e[3]), wInv * (e[4] * this.x + e[5] * this.y + e[6] * this.z + e[7]), wInv * (e[8] * this.x + e[9] * this.y + e[10] * this.z + e[11]));
         };
 
         Vector3.prototype.lengthSq = function () {
@@ -611,48 +615,44 @@ var CS580GL;
 /// <reference path="Matrix4.ts" />
 var CS580GL;
 (function (CS580GL) {
+    ;
+
     /** A camera with perspective projection. The aspect ratio is always assumed to be 1. */
     var Camera = (function () {
-        function Camera(//
-        /** Camera position */
-        position, //
-        /** Position of the target which the camera looks at */
-        lookAtTarget, //
-        /** The up direction */
-        up, //
-        /** Field of view, in radian */
-        fov) {
-            this.position = position;
-            this.lookAtTarget = lookAtTarget;
-            this.up = up;
-            this.fov = fov;
+        function Camera(parameters) {
             /** The look-at matrix, which does both tranlsation and rotation. */
             this.lookAtMatrix = CS580GL.Matrix4.zeros();
             /** The perspective matrix. Note that z will be scaled into range [0, 1] */
             this.perspectiveMatrix = CS580GL.Matrix4.zeros();
-            this.updateLookAtMatrix().updatePerspectiveMatrix();
+            this.position = parameters.position;
+            this.lookAtTarget = parameters.lookAtTarget;
+            this.up = parameters.up;
+            this.fov = parameters.fov;
         }
         Camera.prototype.setPosition = function (position) {
             this.position.copyFrom(position);
-            return this.updateLookAtMatrix();
+            return this;
         };
 
         Camera.prototype.setLookAtTarget = function (target) {
             this.lookAtTarget.copyFrom(target);
-            return this.updateLookAtMatrix();
+            return this;
         };
 
         Camera.prototype.setUpDirection = function (up) {
             this.up.copyFrom(up);
-            return this.updateLookAtMatrix();
+            return this;
         };
 
         Camera.prototype.setFov = function (fov) {
             this.fov = fov;
-            return this.updatePerspectiveMatrix();
+            return this;
         };
 
-        /** Update the look-at matrix. Must be invoked if camera position, look-at target, or up vector is changed. */
+        /**
+        * Update the look-at matrix.
+        * Must be invoked if camera is used for the first time, or if camera position, look-at target, or up vector is changed.
+        */
         Camera.prototype.updateLookAtMatrix = function () {
             var w = CS580GL.Vector3.subtract(this.position, this.lookAtTarget).normalize();
 
@@ -674,23 +674,29 @@ var CS580GL;
             this.lookAtMatrix = new CS580GL.Matrix4([
                 u.x, u.y, u.z, -CS580GL.Vector3.dot(u, this.position),
                 v.x, v.y, v.z, -CS580GL.Vector3.dot(v, this.position),
-                w.x, w.y, w.z, -CS580GL.Vector3.dot(w, this.position)
+                w.x, w.y, w.z, -CS580GL.Vector3.dot(w, this.position),
+                0, 0, 0, 1
             ]);
 
             return this;
         };
 
-        /** Update the perspective matrix. Must be invoked if fov is changed. */
+        /** Update the perspective matrix. Must be invoked if camera is used for the first time, or if fov is changed. */
         Camera.prototype.updatePerspectiveMatrix = function () {
-            var dInv = Math.tan(this.fov);
+            var dInv = Math.tan(this.fov / 2);
             this.perspectiveMatrix = new CS580GL.Matrix4([
                 1, 0, 0, 0,
                 0, 1, 0, 0,
                 0, 0, dInv, 0,
-                0, 0, dInv, 1
+                0, 0, -dInv, 1
             ]);
 
             return this;
+        };
+
+        /** Update the both look-at and perspective matrices. Must be invoked if camera is used for the first time, or if any parameter is changed. */
+        Camera.prototype.updateMatrices = function () {
+            return this.updateLookAtMatrix().updatePerspectiveMatrix();
         };
         return Camera;
     })();
@@ -759,11 +765,42 @@ var CS580GL;
     var Renderer = (function () {
         function Renderer(display) {
             this.display = display;
+            this.toWorldTransformationStack = [];
+            this.accumulatedTransformation = CS580GL.Matrix4.identity();
         }
         Renderer.prototype.setAttributes = function (attributes) {
             if (attributes.flatColor) {
                 this.flatColor = attributes.flatColor;
             }
+            if (attributes.camera) {
+                this.camera = attributes.camera;
+            }
+            return this;
+        };
+
+        Renderer.prototype.updateToScreenTransformation = function () {
+            var halfX = this.display.xres / 2;
+            var halfY = this.display.yres / 2;
+            this.toScreenTransformation = new CS580GL.Matrix4([
+                halfX, 0, 0, halfX,
+                0, -halfY, 0, halfY,
+                0, 0, -CS580GL.Display.Z_MAX, 0,
+                0, 0, 0, 1
+            ]);
+            return this;
+        };
+
+        Renderer.prototype.updateAccumulatedTransformation = function () {
+            var _this = this;
+            if (!this.camera) {
+                this.accumulatedTransformation = CS580GL.Matrix4.identity();
+            } else {
+                this.accumulatedTransformation.copyFrom(this.toScreenTransformation).multiply(this.camera.perspectiveMatrix).multiply(this.camera.lookAtMatrix);
+                this.toWorldTransformationStack.forEach(function (m) {
+                    _this.accumulatedTransformation.multiply(m);
+                });
+            }
+
             return this;
         };
 
@@ -778,7 +815,7 @@ var CS580GL;
             return this;
         };
 
-        Renderer.prototype.renderTriangle = function (triangle) {
+        Renderer.prototype.renderScreenTriangle = function (triangle) {
             var _this = this;
             var floatEq = function (x, y) {
                 return Math.abs(x - y) < 1e-6;
@@ -792,7 +829,7 @@ var CS580GL;
 
                 m = (z1 - z2) / (x1 - x2);
                 x = Math.max(0, Math.round(x1)); // Note: Use round instead of ceil
-                z = z1 + m * (x - x1); // TODO why use int instead of float?
+                z = z1 + m * (x - x1);
                 for (; x < Math.min(x2, _this.display.xres - 1); x += 1, z += m) {
                     _this.renderPixel(x, y, Math.round(z), _this.flatColor);
                 }
@@ -860,6 +897,13 @@ var CS580GL;
 
             return this;
         };
+
+        Renderer.prototype.renderTriangle = function (triangle) {
+            // Note that normal and texture are ignored for the moement
+            var screenTriangle = new CS580GL.MeshTriangle({ position: triangle.a.position.clone().applyAsHomogeneous(this.accumulatedTransformation) }, { position: triangle.b.position.clone().applyAsHomogeneous(this.accumulatedTransformation) }, { position: triangle.c.position.clone().applyAsHomogeneous(this.accumulatedTransformation) });
+            this.renderScreenTriangle(screenTriangle);
+            return this;
+        };
         return Renderer;
     })();
     CS580GL.Renderer = Renderer;
@@ -896,45 +940,102 @@ var CS580GL;
         return display;
     }
 
-    // ---- Homework 2 ----
-    function renderHomework2(pot4Data) {
-        function parseVertex(textLine) {
+    // Helper function for Homework 2 & 3: flat shading
+    function simpleShading(normal) {
+        var light = new CS580GL.Vector3(0.707, 0.5, 0.5);
+        var coef = CS580GL.Vector3.dot(normal, light);
+        if (coef < 0) {
+            coef = -coef;
+        }
+        if (coef > 1) {
+            coef = 1;
+        }
+        return new CS580GL.Color(0.95, 0.65, 0.88).multiplyScalar(coef);
+    }
+
+    // Helper function for Homework 2 & 3: parse triangle data string
+    function parseTriangles(trianglesData, invertZ) {
+        if (typeof invertZ === "undefined") { invertZ = true; }
+        var result = [];
+
+        var parseVertex = function (textLine) {
             var numbers = textLine.trim().split(/\s+/).map(function (s) {
                 return parseFloat(s);
             });
             return {
-                position: new CS580GL.Vector3(numbers[0], numbers[1], numbers[2]),
-                normal: new CS580GL.Vector3(numbers[3], numbers[4], numbers[5]),
+                position: new CS580GL.Vector3(numbers[0], numbers[1], invertZ ? -numbers[2] : numbers[2]),
+                normal: new CS580GL.Vector3(numbers[3], numbers[4], invertZ ? -numbers[5] : numbers[5]),
                 uv: new CS580GL.Vector2(numbers[6], numbers[7])
             };
-        }
+        };
 
-        function simpleShading(normal) {
-            var light = new CS580GL.Vector3(0.707, 0.5, 0.5);
-            var coef = CS580GL.Vector3.dot(normal, light);
-            if (coef < 0) {
-                coef = -coef;
-            }
-            if (coef > 1) {
-                coef = 1;
-            }
-            return new CS580GL.Color(0.95, 0.65, 0.88).multiplyScalar(coef);
-        }
-
-        var display = new CS580GL.Display(256, 256).reset(defaultBackgroundPixel);
-        var renderer = new CS580GL.Renderer(display);
-
-        var lines = pot4Data.trim().split("\r");
+        var lines = trianglesData.trim().split("\r");
         for (var i = 0; i < lines.length; i += 4) {
             var v1 = parseVertex(lines[i + 1]);
             var v2 = parseVertex(lines[i + 2]);
             var v3 = parseVertex(lines[i + 3]);
 
             var triangle = new CS580GL.MeshTriangle(v1, v2, v3);
-            var flatColor = simpleShading(v1.normal);
+            result.push(triangle);
+        }
 
-            renderer.flatColor = flatColor;
-            renderer.renderTriangle(triangle);
+        return result;
+    }
+
+    // ---- Homework 2 ----
+    function renderHomework2(pot4Data) {
+        var display = new CS580GL.Display(256, 256).reset(defaultBackgroundPixel);
+        var renderer = new CS580GL.Renderer(display);
+
+        var triangles = parseTriangles(pot4Data, false);
+        for (var i = 0; i < triangles.length; i += 1) {
+            renderer.flatColor = simpleShading(triangles[i].a.normal);
+            renderer.renderScreenTriangle(triangles[i]);
+        }
+
+        return display;
+    }
+
+    // ---- Homework 3 ----
+    function renderHomework3(pot4Data) {
+        var display = new CS580GL.Display(256, 256).reset(defaultBackgroundPixel);
+
+        var renderer = new CS580GL.Renderer(display);
+
+        renderer.updateToScreenTransformation();
+        renderer.camera = new CS580GL.Camera({
+            position: new CS580GL.Vector3(13.2, -8.7, 14.8),
+            lookAtTarget: new CS580GL.Vector3(0.8, 0.7, -4.5),
+            up: new CS580GL.Vector3(-0.2, 1.0, 0),
+            fov: 53.7 / 180 * Math.PI
+        }).updateMatrices();
+        renderer.toWorldTransformationStack.push(new CS580GL.Matrix4([
+            3.25, 0.0, 0.0, 0.0,
+            0.0, 3.25, 0.0, -3.25,
+            0.0, 0.0, 3.25, -3.5,
+            0.0, 0.0, 0.0, 1.0
+        ]));
+        renderer.toWorldTransformationStack.push(new CS580GL.Matrix4([
+            .866, 0.0, 0.5, 0.0,
+            0.0, 1.0, 0.0, 0.0,
+            -0.5, 0.0, .866, 0.0,
+            0.0, 0.0, 0.0, 1.0
+        ]));
+        renderer.toWorldTransformationStack.push(new CS580GL.Matrix4([
+            1.0, 0.0, 0.0, 0.0,
+            0.0, .7071, -.7071, 0.0,
+            0.0, .7071, .7071, 0.0,
+            0.0, 0.0, 0.0, 1.0
+        ]));
+        renderer.updateAccumulatedTransformation();
+
+        var triangles = parseTriangles(pot4Data);
+        for (var i = 0; i < triangles.length; i += 1) {
+            var shadingNormal = triangles[i].a.normal.clone();
+            shadingNormal.setZ(-shadingNormal.z);
+            renderer.flatColor = simpleShading(shadingNormal);
+
+            renderer.renderTriangle(triangles[i]);
         }
 
         return display;
@@ -987,6 +1088,13 @@ var CS580GL;
                     });
                     break;
 
+                case "hw3":
+                    canvasElem.height = canvasElem.width = 256;
+                    loadTextFileAsync("data/pot4.asc", function (text) {
+                        flush(renderHomework3(text));
+                    });
+                    break;
+
                 default:
             }
         };
@@ -995,4 +1103,4 @@ var CS580GL;
         renderSelection();
         selectElem.onchange = renderSelection;
     };
-}());
+})();

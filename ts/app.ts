@@ -1,6 +1,6 @@
 ﻿/// <reference path="glib/Renderer.ts" />
 
-(function() {
+(() => {
     var defaultBackgroundColor = CS580GL.Color.fromRGBUint8(123, 112, 96);
     var defaultBackgroundPixel = new CS580GL.Pixel().setColor(defaultBackgroundColor);
 
@@ -30,44 +30,101 @@
         return display;
     }
 
-    // ---- Homework 2 ----
+    // Helper function for Homework 2 & 3: flat shading
+    function simpleShading(normal: CS580GL.Vector3): CS580GL.Color {
+        var light = new CS580GL.Vector3(0.707, 0.5, 0.5);
+        var coef = CS580GL.Vector3.dot(normal, light);
+        if (coef < 0) {
+            coef = -coef;
+        }
+        if (coef > 1) {
+            coef = 1;
+        }
+        return new CS580GL.Color(0.95, 0.65, 0.88).multiplyScalar(coef);
+    }
 
-    function renderHomework2(pot4Data: string): CS580GL.Display {
-        function parseVertex(textLine: string): CS580GL.MeshVertex {
+    // Helper function for Homework 2 & 3: parse triangle data string
+    function parseTriangles(trianglesData: string, invertZ: boolean = true): CS580GL.MeshTriangle[] {
+        var result = [];
+
+        var parseVertex = (textLine: string) : CS580GL.IMeshVertex => {
             var numbers = textLine.trim().split(/\s+/).map(s => parseFloat(s));
             return {
-                position: new CS580GL.Vector3(numbers[0], numbers[1], numbers[2]),
-                normal: new CS580GL.Vector3(numbers[3], numbers[4], numbers[5]),
+                position: new CS580GL.Vector3(numbers[0], numbers[1], invertZ ? -numbers[2] : numbers[2]),
+                normal: new CS580GL.Vector3(numbers[3], numbers[4], invertZ ? -numbers[5] : numbers[5]),
                 uv: new CS580GL.Vector2(numbers[6], numbers[7])
             };
         }
 
-        function simpleShading(normal: CS580GL.Vector3): CS580GL.Color {
-            var light = new CS580GL.Vector3(0.707, 0.5, 0.5);
-            var coef = CS580GL.Vector3.dot(normal, light);
-            if (coef < 0) {
-                coef = -coef;
-            }
-            if (coef > 1) {
-                coef = 1;
-            }
-            return new CS580GL.Color(0.95, 0.65, 0.88).multiplyScalar(coef);
-        }
-
-        var display = new CS580GL.Display(256, 256).reset(defaultBackgroundPixel);
-        var renderer = new CS580GL.Renderer(display);
-
-        var lines = pot4Data.trim().split("\r");
+        var lines = trianglesData.trim().split("\r");
         for (var i = 0; i < lines.length; i += 4) {
             var v1 = parseVertex(lines[i + 1]);
             var v2 = parseVertex(lines[i + 2]);
             var v3 = parseVertex(lines[i + 3]);
 
             var triangle = new CS580GL.MeshTriangle(v1, v2, v3);
-            var flatColor = simpleShading(v1.normal)
+            result.push(triangle);
+        }
 
-            renderer.flatColor = flatColor;
-            renderer.renderTriangle(triangle);
+        return result;
+    }
+    
+    // ---- Homework 2 ----
+
+    function renderHomework2(pot4Data: string): CS580GL.Display {
+        var display = new CS580GL.Display(256, 256).reset(defaultBackgroundPixel);
+        var renderer = new CS580GL.Renderer(display);
+
+        var triangles = parseTriangles(pot4Data, false);
+        for (var i = 0; i < triangles.length; i += 1) {
+            renderer.flatColor = simpleShading(triangles[i].a.normal);
+            renderer.renderScreenTriangle(triangles[i]);
+        }
+
+        return display;
+    }
+
+    // ---- Homework 3 ----
+
+    function renderHomework3(pot4Data: string): CS580GL.Display {
+        var display = new CS580GL.Display(256, 256).reset(defaultBackgroundPixel);
+
+        var renderer = new CS580GL.Renderer(display);
+
+        renderer.updateToScreenTransformation();
+        renderer.camera = new CS580GL.Camera({
+            position: new CS580GL.Vector3(13.2, -8.7, 14.8),
+            lookAtTarget: new CS580GL.Vector3(0.8, 0.7, -4.5),
+            up: new CS580GL.Vector3(-0.2, 1.0, 0),
+            fov: 53.7 / 180 * Math.PI
+        }).updateMatrices();
+        renderer.toWorldTransformationStack.push(new CS580GL.Matrix4([
+            3.25, 0.0, 0.0, 0.0,
+            0.0, 3.25, 0.0, -3.25,
+            0.0, 0.0, 3.25, -3.5,
+            0.0, 0.0, 0.0, 1.0
+        ]));
+        renderer.toWorldTransformationStack.push(new CS580GL.Matrix4([
+            .866, 0.0, 0.5, 0.0,
+            0.0, 1.0, 0.0, 0.0,
+            -0.5, 0.0, .866, 0.0,
+            0.0, 0.0, 0.0, 1.0
+        ]));
+        renderer.toWorldTransformationStack.push(new CS580GL.Matrix4([
+            1.0, 0.0, 0.0, 0.0,
+            0.0, .7071, -.7071, 0.0,
+            0.0, .7071, .7071, 0.0,
+            0.0, 0.0, 0.0, 1.0 
+        ]));
+        renderer.updateAccumulatedTransformation();
+
+        var triangles = parseTriangles(pot4Data);
+        for (var i = 0; i < triangles.length; i += 1) {
+            var shadingNormal = triangles[i].a.normal.clone();
+            shadingNormal.setZ(- shadingNormal.z);
+            renderer.flatColor = simpleShading(shadingNormal);
+
+            renderer.renderTriangle(triangles[i]);
         }
 
         return display;
@@ -117,7 +174,14 @@
                 canvasElem.height = canvasElem.width = 256;
                 loadTextFileAsync("data/pot4.screen.asc", text => {
                     flush(renderHomework2(text));
-                })
+                });
+                break;
+
+            case "hw3":
+                canvasElem.height = canvasElem.width = 256;
+                loadTextFileAsync("data/pot4.asc", text => {
+                    flush(renderHomework3(text));
+                });
                 break;
 
             default:
@@ -128,4 +192,4 @@
         renderSelection();
         selectElem.onchange = renderSelection;
     };
-}());
+})();

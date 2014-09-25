@@ -12,6 +12,8 @@ module CS580GL {
         rgbaBuffer: Uint8Array;
         zBuffer: Int32Array;
 
+        static Z_MAX = 0x7fffffff;
+
         constructor(public xres: number, public yres: number) {
             if (xres <= 0 || yres <= 0) {
                 throw "Resolution must be positive.";
@@ -32,7 +34,7 @@ module CS580GL {
             greenUint8: 0,
             blueUint8: 0,
             alphaUint8: 0xff,
-            z: 0x7fffffff
+            z: Display.Z_MAX
         })): Display {
             for (var i = 0; i < this.rgbaBuffer.length; i += 4) {
                 this.rgbaBuffer[i] = pixel.redUint8;

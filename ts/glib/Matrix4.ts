@@ -9,6 +9,14 @@
             this.elements.set(elements);
         }
 
+        toString(): string {
+            var e = this.elements;
+            return "[" + e[0] + "\t" + e[1] + "\t" + e[2] + "\t" + e[3] + ";\n" +
+                e[4] + "\t" + e[5] + "\t" + e[6] + "\t" + e[7] + ";\n" +
+                e[8] + "\t" + e[9] + "\t" + e[10] + "\t" + e[11] + ";\n" +
+                e[12] + "\t" + e[13] + "\t" + e[14] + "\t" + e[15] + "]";
+        }
+
         /** Clone this matrix */
         clone(): Matrix4 {
             return new Matrix4(this.elements);

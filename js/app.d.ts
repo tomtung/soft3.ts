@@ -89,6 +89,7 @@ declare module CS580GL {
         public yres: number;
         public rgbaBuffer: Uint8Array;
         public zBuffer: Int32Array;
+        static Z_MAX: number;
         constructor(xres: number, yres: number);
         /** Returns a reference to the pixel at the position specified by x and y */
         public pixelAt(x: number, y: number): PixelRef;
@@ -107,6 +108,7 @@ declare module CS580GL {
         public elements: Float32Array;
         /** Construct a 4x4 matrix from a row-major array of numbers */
         constructor(elements: any);
+        public toString(): string;
         /** Clone this matrix */
         public clone(): Matrix4;
         /** Copy content from another matrix */
@@ -162,8 +164,18 @@ declare module CS580GL {
     }
 }
 declare module CS580GL {
+    interface ICameraParameters {
+        position: Vector3;
+        lookAtTarget: Vector3;
+        up: Vector3;
+        fov: number;
+    }
     /** A camera with perspective projection. The aspect ratio is always assumed to be 1. */
     class Camera {
+        /** The look-at matrix, which does both tranlsation and rotation. */
+        public lookAtMatrix: Matrix4;
+        /** The perspective matrix. Note that z will be scaled into range [0, 1] */
+        public perspectiveMatrix: Matrix4;
         /** Camera position */
         public position: Vector3;
         /** Position of the target which the camera looks at */
@@ -172,23 +184,20 @@ declare module CS580GL {
         public up: Vector3;
         /** Field of view, in radian */
         public fov: number;
-        /** The look-at matrix, which does both tranlsation and rotation. */
-        public lookAtMatrix: Matrix4;
-        /** The perspective matrix. Note that z will be scaled into range [0, 1] */
-        public perspectiveMatrix: Matrix4;
-        constructor(/** Camera position */
-            position: Vector3, /** Position of the target which the camera looks at */
-            lookAtTarget: Vector3, /** The up direction */
-            up: Vector3, /** Field of view, in radian */
-            fov: number);
+        constructor(parameters: ICameraParameters);
         public setPosition(position: Vector3): Camera;
         public setLookAtTarget(target: Vector3): Camera;
         public setUpDirection(up: Vector3): Camera;
         public setFov(fov: number): Camera;
-        /** Update the look-at matrix. Must be invoked if camera position, look-at target, or up vector is changed. */
+        /**
+        * Update the look-at matrix.
+        * Must be invoked if camera is used for the first time, or if camera position, look-at target, or up vector is changed.
+        */
         public updateLookAtMatrix(): Camera;
-        /** Update the perspective matrix. Must be invoked if fov is changed. */
+        /** Update the perspective matrix. Must be invoked if camera is used for the first time, or if fov is changed. */
         public updatePerspectiveMatrix(): Camera;
+        /** Update the both look-at and perspective matrices. Must be invoked if camera is used for the first time, or if any parameter is changed. */
+        public updateMatrices(): Camera;
     }
 }
 declare module CS580GL {
@@ -208,7 +217,7 @@ declare module CS580GL {
     * A MeshVertex object represents a vertex,
     * including its position, normal, and UV mapping values
     */
-    interface MeshVertex {
+    interface IMeshVertex {
         position: Vector3;
         normal?: Vector3;
         uv?: Vector2;
@@ -217,24 +226,32 @@ declare module CS580GL {
 declare module CS580GL {
     /** A TriangleFace object represents a triangle face in a triangle mesh */
     class MeshTriangle {
-        public a: MeshVertex;
-        public b: MeshVertex;
-        public c: MeshVertex;
-        constructor(a: MeshVertex, b: MeshVertex, c: MeshVertex);
-        public toVertexArray(): MeshVertex[];
+        public a: IMeshVertex;
+        public b: IMeshVertex;
+        public c: IMeshVertex;
+        constructor(a: IMeshVertex, b: IMeshVertex, c: IMeshVertex);
+        public toVertexArray(): IMeshVertex[];
     }
 }
 declare module CS580GL {
-    interface RenderAttributes {
+    interface IRenderAttributes {
         flatColor?: Color;
+        camera?: Camera;
     }
     /** Render objects contructor */
     class Renderer {
         public display: Display;
         public flatColor: Color;
+        public camera: Camera;
+        public toWorldTransformationStack: Matrix4[];
+        public toScreenTransformation: Matrix4;
+        public accumulatedTransformation: Matrix4;
         constructor(display: Display);
-        public setAttributes(attributes: RenderAttributes): Renderer;
+        public setAttributes(attributes: IRenderAttributes): Renderer;
+        public updateToScreenTransformation(): Renderer;
+        public updateAccumulatedTransformation(): Renderer;
         public renderPixel(x: number, y: number, z: number, color: Color): Renderer;
+        public renderScreenTriangle(triangle: MeshTriangle): Renderer;
         public renderTriangle(triangle: MeshTriangle): Renderer;
     }
 }
