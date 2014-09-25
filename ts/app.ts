@@ -5,7 +5,10 @@
     var defaultBackgroundPixel = new CS580GL.Pixel().setColor(defaultBackgroundColor);
 
     // ---- Homework 1 ----
-    function renderHowework1(rectData: string): CS580GL.Display {
+    function renderHowework1(
+        rectData: string,
+        flush: (display: CS580GL.Display, toImageFile?: boolean) => void
+    ): void {
         var display = new CS580GL.Display(512, 512).reset(defaultBackgroundPixel);
 
         var scaleRgb = (value: number) =>
@@ -27,7 +30,7 @@
 
         rectData.trim().split("\n").forEach(renderRectangle);
 
-        return display;
+        flush(display);
     }
 
     // Helper function for Homework 2 & 3: flat shading
@@ -71,22 +74,29 @@
     
     // ---- Homework 2 ----
 
-    function renderHomework2(pot4Data: string): CS580GL.Display {
+    function renderHomework2(
+        screenPotData: string,
+        flush: (display: CS580GL.Display, toImageFile?: boolean) => void
+    ): void {
         var display = new CS580GL.Display(256, 256).reset(defaultBackgroundPixel);
         var renderer = new CS580GL.Renderer(display);
 
-        var triangles = parseTriangles(pot4Data, false);
+        var triangles = parseTriangles(screenPotData, false);
         for (var i = 0; i < triangles.length; i += 1) {
             renderer.flatColor = simpleShading(triangles[i].a.normal);
             renderer.renderScreenTriangle(triangles[i]);
         }
 
-        return display;
+        flush(display);
     }
 
     // ---- Homework 3 ----
 
-    function renderHomework3(pot4Data: string): CS580GL.Display {
+    function renderHomework3(
+        potData: string,
+        getParameters: () => any,
+        flush: (display: CS580GL.Display, toImageFile?: boolean) => void
+    ): void {
         var display = new CS580GL.Display(256, 256).reset(defaultBackgroundPixel);
 
         var renderer = new CS580GL.Renderer(display);
@@ -98,16 +108,18 @@
             fov: 53.7 / 180 * Math.PI
         });
 
+        var parameters = getParameters();
         renderer.toWorldTransformationStack = [
-            CS580GL.Matrix4.makeTranslation(0, -3.25, -3.5),
-            CS580GL.Matrix4.makeRotationY(30 / 180 * Math.PI),
-            CS580GL.Matrix4.makeRotationX(45 / 180 * Math.PI),
-            CS580GL.Matrix4.makeScale(3.25, 3.25, 3.25)
+            CS580GL.Matrix4.makeTranslation(parameters.translate.x, parameters.translate.y, parameters.translate.z),
+            CS580GL.Matrix4.makeRotationZ(parameters.rotate.z),
+            CS580GL.Matrix4.makeRotationY(parameters.rotate.y),
+            CS580GL.Matrix4.makeRotationX(parameters.rotate.x),
+            CS580GL.Matrix4.makeScale(parameters.scale.x, parameters.scale.y, parameters.scale.z)
         ];
 
         renderer.updateAccumulatedTransformation();
 
-        var triangles = parseTriangles(pot4Data);
+        var triangles = parseTriangles(potData);
         for (var i = 0; i < triangles.length; i += 1) {
             var shadingNormal = triangles[i].a.normal.clone();
             shadingNormal.setZ(- shadingNormal.z);
@@ -116,7 +128,7 @@
             renderer.renderTriangle(triangles[i]);
         }
 
-        return display;
+        flush(display);
     }
 
     // Utility function for loading text file content
@@ -136,12 +148,16 @@
         var downloadAnchorElem = <HTMLAnchorElement> document.getElementById("download");
         var selectElem = <HTMLSelectElement> document.getElementById("select");
 
+        downloadAnchorElem.onclick = () => alert("test!");
+
         // Utility function for flushing the Display into both the Canvas and a PPM file
-        var flush = (display: CS580GL.Display) => {
+        var flush = (display: CS580GL.Display, toImageFile: boolean = false) => {
             display.drawOnCanvas(canvasElem);
 
-            downloadAnchorElem.href = URL.createObjectURL(display.toNetpbm());
-            downloadAnchorElem.setAttribute('download', 'render-result.ppm');
+            if (toImageFile) {
+                downloadAnchorElem.href = URL.createObjectURL(display.toNetpbm());
+                downloadAnchorElem.setAttribute('download', 'render-result.ppm');
+            }
         }
 
         // Load data for the selected homework,
@@ -155,21 +171,30 @@
             case "hw1":
                 canvasElem.height = canvasElem.width = 512;
                 loadTextFileAsync("data/rects", text => {
-                    flush(renderHowework1(text));
+                    renderHowework1(text, flush);
                 });
                 break;
 
             case "hw2":
                 canvasElem.height = canvasElem.width = 256;
                 loadTextFileAsync("data/pot4.screen.asc", text => {
-                    flush(renderHomework2(text));
+                    renderHomework2(text, flush);
                 });
                 break;
 
             case "hw3":
                 canvasElem.height = canvasElem.width = 256;
+
+                var getParameters = () => {
+                    return {
+                        translate: { x: 0, y: -3.25, z: -3.5 },
+                        rotate: { x: 45 / 180 * Math.PI, y: 30 / 180 * Math.PI, z: 0 },
+                        scale: {x: 3.25, y: 3.25, z: 3.25}
+                    };
+                };
+
                 loadTextFileAsync("data/pot4.asc", text => {
-                    flush(renderHomework3(text));
+                    renderHomework3(text, getParameters, flush);
                 });
                 break;
 
