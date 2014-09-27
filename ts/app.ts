@@ -186,7 +186,7 @@
                 downloadAnchorElem.href = URL.createObjectURL(display.toNetpbm());
                 downloadAnchorElem.setAttribute('download', 'render-result.ppm');
             }
-        }
+        };
 
         // Load data for the selected homework,
         // call the corresponding render function,
@@ -249,9 +249,22 @@
         // Call once after load, and call each time the selection changes
         renderSelection();
         selectElem.onchange = renderSelection;
+
+        // Hook-up input elements and their corresponding output
+        var inputElems = document.getElementsByTagName("input");
+        var hookUpInputOutput = (i: HTMLInputElement, o: any) => {
+            o.value = i.value;
+            i.oninput = () => {
+                o.value = i.value;
+            };
+        };
+        for(var i = 0; i < inputElems.length; i += 1) {
+            var inputElem = inputElems[i];
+            var outputElem: any = document.getElementById(inputElem.id + "-output");
+            if (outputElem) {
+                console.log(outputElem);
+                hookUpInputOutput(inputElem, outputElem);
+            }
+        }
     };
 })();
-
-function onInputChange(inputElem: HTMLInputElement) {
-    document.getElementById(inputElem.id + "-output").value = inputElem.value;
-}

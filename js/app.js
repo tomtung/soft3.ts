@@ -1133,9 +1133,23 @@ var CS580GL;
         // Call once after load, and call each time the selection changes
         renderSelection();
         selectElem.onchange = renderSelection;
+
+        // Hook-up input elements and their corresponding output
+        var inputElems = document.getElementsByTagName("input");
+        var hookUpInputOutput = function (i, o) {
+            o.value = i.value;
+            i.oninput = function () {
+                o.value = i.value;
+            };
+        };
+        for (var i = 0; i < inputElems.length; i += 1) {
+            var inputElem = inputElems[i];
+            var outputElem = document.getElementById(inputElem.id + "-output");
+            if (outputElem) {
+                console.log(outputElem);
+                hookUpInputOutput(inputElem, outputElem);
+            }
+        }
     };
 })();
-
-function onInputChange(inputElem) {
-    document.getElementById(inputElem.id + "-output").value = inputElem.value;
-}
+//# sourceMappingURL=app.js.map
