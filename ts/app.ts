@@ -26,7 +26,7 @@
                     display.pixelAt(x, y).setRedUint8(r).setGreenUint8(g).setBlueUint8(b);
                 }
             }
-        }
+        };
 
         rectData.trim().split("\n").forEach(renderRectangle);
 
@@ -57,7 +57,7 @@
                 normal: new CS580GL.Vector3(numbers[3], numbers[4], invertZ ? -numbers[5] : numbers[5]),
                 uv: new CS580GL.Vector2(numbers[6], numbers[7])
             };
-        }
+        };
 
         var lines = trianglesData.trim().split("\r");
         for (var i = 0; i < lines.length; i += 4) {
@@ -143,7 +143,7 @@
             }
 
             requestAnimationFrame(() => renderLoop());
-        }
+        };
 
         renderLoop(true);
     }
@@ -156,7 +156,7 @@
             if (client.readyState === XMLHttpRequest.DONE) {
                 callback(client.responseText);
             }
-        }
+        };
         client.send();
     }
 
@@ -225,7 +225,7 @@
                         rotate: {
                             x: parseFloat(rotateXElem.value) / 180 * Math.PI,
                             y: parseFloat(rotateYElem.value) / 180 * Math.PI,
-                            z: parseFloat(rotateZElem.value) / 180 * Math.PI,
+                            z: parseFloat(rotateZElem.value) / 180 * Math.PI
                         },
                         scale: {
                             x: parseFloat(scaleXElem.value),
@@ -262,7 +262,6 @@
             var inputElem = inputElems[i];
             var outputElem: any = document.getElementById(inputElem.id + "-output");
             if (outputElem) {
-                console.log(outputElem);
                 hookUpInputOutput(inputElem, outputElem);
             }
         }

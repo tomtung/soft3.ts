@@ -1146,7 +1146,6 @@ var CS580GL;
             var inputElem = inputElems[i];
             var outputElem = document.getElementById(inputElem.id + "-output");
             if (outputElem) {
-                console.log(outputElem);
                 hookUpInputOutput(inputElem, outputElem);
             }
         }
