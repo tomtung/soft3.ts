@@ -6,7 +6,7 @@ module CS580GL {
      * which contains an array of 32-bit RGBA pixel values and a 32-bit depth value for each pixel.
      *
      * Note that the RGBA array and the Z buffer are stored separately,
-     * since it is hard to efficiently use heterogenious arrays in JavaScript
+     * since it is hard to efficiently use heterogeneous arrays in JavaScript
      */
     export class Display {
         rgbaBuffer: Uint8Array;
@@ -14,12 +14,12 @@ module CS580GL {
 
         static Z_MAX = 0x7fffffff;
 
-        constructor(public xres: number, public yres: number) {
-            if (xres <= 0 || yres <= 0) {
+        constructor(public width: number, public height: number) {
+            if (width <= 0 || height <= 0) {
                 throw "Resolution must be positive.";
             }
-            this.rgbaBuffer = new Uint8Array(xres * yres * 4);
-            this.zBuffer = new Int32Array(xres * yres);
+            this.rgbaBuffer = new Uint8Array(width * height * 4);
+            this.zBuffer = new Int32Array(width * height);
             this.reset();
         }
 
@@ -51,19 +51,19 @@ module CS580GL {
         /** Flush the frame into a HTML Canvas element */
         drawOnCanvas(canvasElem: HTMLCanvasElement, x: number = 0, y: number = 0) {
             var canvasContext = canvasElem.getContext("2d");
-            var imageData = canvasContext.createImageData(this.xres, this.yres);
+            var imageData = canvasContext.createImageData(this.width, this.height);
             imageData.data.set(this.rgbaBuffer);
             canvasContext.putImageData(imageData, x, y);
         }
 
         /** Flush the frame in the Netpbm image format (PPM) and return the result as a Blob */
         toNetpbm(): Blob {
-            var result = "P3\n" + this.xres + " " + this.yres + "\n255\n";
+            var result = "P3\n" + this.width + " " + this.height + "\n255\n";
 
             for (var i = 0, xPos = 0; i < this.rgbaBuffer.length; i += 4, xPos += 1) {
                 result += this.rgbaBuffer[i] + " " + this.rgbaBuffer[i + 1] + " " + this.rgbaBuffer[i + 2];
 
-                if (xPos + 1 === this.xres) {
+                if (xPos + 1 === this.width) {
                     result += "\n";
                     xPos = 0;
                 } else {

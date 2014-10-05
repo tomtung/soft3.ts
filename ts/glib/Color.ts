@@ -1,17 +1,23 @@
+/// <reference path="utils.ts" />
+
 module CS580GL {
-	/** A Color object represents a color. */
+    /** A Color object represents a color. */
     export class Color {
-        constructor(
-            //
-            /** Red channel value between 0 and 1. Default is 1. */
-            public red: number = 1,
-            //
-            /** Red channel value between 0 and 1. Default is 1. */
-            public green: number = 1,
-            //
-            /** Red channel value between 0 and 1. Default is 1. */
-            public blue: number = 1
-        ) { }
+        constructor(//
+                    /** Red channel value between 0 and 1. Default is 1. */
+                    public red: number = 1, //
+                    //
+                    /** Green channel value between 0 and 1. Default is 1. */
+                    public green: number = 1,//
+                    //
+                    /** Blue channel value between 0 and 1. Default is 1. */
+                    public blue: number = 1) {
+        }
+
+
+        clone(): Color {
+            return new Color(this.red, this.green, this.blue)
+        }
 
         setRGB(red: number, green: number, blue: number): Color {
             this.red = red;
@@ -96,13 +102,39 @@ module CS580GL {
             return this;
         }
 
+        static multiplyScalar(color: Color, scalar: number): Color {
+            return color.clone().multiplyScalar(scalar);
+        }
+
         getHex(): number {
             return (this.redUint8 << 16) | (this.greenUint8 << 8) | this.blueUint8;
         }
 
         getHexString(): string {
-            // Smart implementatin borrowed from three.js
+            // Smart implementation borrowed from three.js
             return ("000000" + this.getHex().toString(16)).slice(-6);
+        }
+
+        clamp(): Color {
+            this.red = clamp(this.red, 0, 1);
+            this.green = clamp(this.green, 0, 1);
+            this.blue = clamp(this.blue, 0, 1);
+            return this;
+        }
+
+        static clamp(color: Color): Color {
+            return color.clone().clamp();
+        }
+
+        add(other: Color): Color {
+            this.red += other.red;
+            this.green += other.green;
+            this.blue += other.blue;
+            return this;
+        }
+
+        static add(c1: Color, c2: Color): Color {
+            return c1.clone().add(c2);
         }
     }
 }

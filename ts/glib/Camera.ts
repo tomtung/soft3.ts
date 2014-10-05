@@ -7,12 +7,12 @@ module CS580GL {
         lookAtTarget: Vector3;
         up: Vector3;
         fov: number;
-    };
+    }
 
     /** A camera with perspective projection. The aspect ratio is always assumed to be 1. */
     export class Camera {
 
-        /** The look-at matrix, which does both tranlsation and rotation. */
+        /** The look-at matrix, which does both translation and rotation. */
         public lookAtMatrix: Matrix4 = Matrix4.zeros();
 
         /** The perspective matrix. Note that z will be scaled into range [0, 1] */
@@ -44,14 +44,14 @@ module CS580GL {
          */
         public updateLookAtMatrix(): Camera {
             var w = Vector3.subtract(this.position, this.lookAtTarget).normalize();
-            
+
             // Edge case handling code borrowed from three.js
             if (w.length() == 0) {
                 w.z = 1;
             }
 
             var u = Vector3.cross(this.up, w).normalize();
-            
+
             // Edge case handling code also borrowed from three.js
             if (Math.abs(u.length()) < 1e-5) {
                 w.x += 1e-4;

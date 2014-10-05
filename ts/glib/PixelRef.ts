@@ -12,11 +12,11 @@ module CS580GL {
         aIndex: number;
 
         constructor(public display: Display, x: number, y: number) {
-            if (x < 0 || x >= display.xres || y < 0 || y >= display.yres) {
+            if (x < 0 || x >= display.width || y < 0 || y >= display.height) {
                 throw "Index out of bound.";
             }
 
-            this.zIndex = x + y * display.xres;
+            this.zIndex = x + y * display.width;
             this.rIndex = 4 * this.zIndex;
             this.gIndex = this.rIndex + 1;
             this.bIndex = this.gIndex + 1;

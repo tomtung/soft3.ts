@@ -5,15 +5,12 @@
     var defaultBackgroundPixel = new CS580GL.Pixel().setColor(defaultBackgroundColor);
 
     // ---- Homework 1 ----
-    function renderHowework1(
-        rectData: string,
-        flush: (display: CS580GL.Display, toImageFile?: boolean) => void
-    ): void {
+    function renderHomework1(rectData: string, flush: (display: CS580GL.Display, toImageFile?: boolean) => void): void {
         var display = new CS580GL.Display(512, 512).reset(defaultBackgroundPixel);
 
         var scaleRgb = (value: number) =>
             Math.round(
-                CS580GL.clamp(value, 0, 4095) / 4095 * 255
+                    CS580GL.clamp(value, 0, 4095) / 4095 * 255
             );
 
         var renderRectangle = (dataLine: string) => {
@@ -33,29 +30,16 @@
         flush(display, true);
     }
 
-    // Helper function for Homework 2 & 3: flat shading
-    function simpleShading(normal: CS580GL.Vector3): CS580GL.Color {
-        var light = new CS580GL.Vector3(0.707, 0.5, 0.5);
-        var coef = CS580GL.Vector3.dot(normal, light);
-        if (coef < 0) {
-            coef = -coef;
-        }
-        if (coef > 1) {
-            coef = 1;
-        }
-        return new CS580GL.Color(0.95, 0.65, 0.88).multiplyScalar(coef);
-    }
-
     // Helper function for Homework 2 & 3: parse triangle data string
     function parseTriangles(trianglesData: string, invertZ: boolean = true): CS580GL.MeshTriangle[] {
         var result = [];
 
-        var parseVertex = (textLine: string) : CS580GL.IMeshVertex => {
+        var parseVertex = (textLine: string): CS580GL.IMeshVertex => {
             var numbers = textLine.trim().split(/\s+/).map(s => parseFloat(s));
             return {
                 position: new CS580GL.Vector3(numbers[0], numbers[1], invertZ ? -numbers[2] : numbers[2]),
                 normal: new CS580GL.Vector3(numbers[3], numbers[4], invertZ ? -numbers[5] : numbers[5]),
-                uv: new CS580GL.Vector2(numbers[6], numbers[7])
+                textureCoordinate: new CS580GL.Vector2(numbers[6], numbers[7])
             };
         };
 
@@ -71,19 +55,20 @@
 
         return result;
     }
-    
+
     // ---- Homework 2 ----
 
-    function renderHomework2(
-        screenPotData: string,
-        flush: (display: CS580GL.Display, toImageFile?: boolean) => void
-    ): void {
+    function renderHomework2(screenPotData: string, flush: (display: CS580GL.Display, toImageFile?: boolean) => void): void {
         var display = new CS580GL.Display(256, 256).reset(defaultBackgroundPixel);
         var renderer = new CS580GL.Renderer(display);
+        renderer.shading = CS580GL.ShadingMode.Flat;
+        renderer.directionalLights.push({
+            direction: new CS580GL.Vector3(0.707, 0.5, 0.5),
+            color: new CS580GL.Color(0.95, 0.65, 0.88)
+        });
 
         var triangles = parseTriangles(screenPotData, false);
         for (var i = 0; i < triangles.length; i += 1) {
-            renderer.flatColor = simpleShading(triangles[i].a.normal);
             renderer.renderScreenTriangle(triangles[i]);
         }
 
@@ -92,21 +77,25 @@
 
     // ---- Homework 3 ----
 
-    function renderHomework3(
-        potData: string,
-        getParameters: () => any,
-        flush: (display: CS580GL.Display, toImageFile?: boolean) => void
-    ): void {
+    function renderHomework3(potData: string, getParameters: () => any, flush: (display: CS580GL.Display, toImageFile?: boolean) => void): void {
         var display = new CS580GL.Display(256, 256);
 
         var renderer = new CS580GL.Renderer(display);
-        
+
+        renderer.shading = CS580GL.ShadingMode.Flat;
+        renderer.directionalLights.push({
+            direction: new CS580GL.Vector3(0.707, 0.5, 0.5),
+            color: new CS580GL.Color(0.95, 0.65, 0.88)
+        });
+
         renderer.camera = new CS580GL.Camera({
             position: new CS580GL.Vector3(13.2, -8.7, 14.8),
             lookAtTarget: new CS580GL.Vector3(0.8, 0.7, -4.5),
             up: new CS580GL.Vector3(-0.2, 1.0, 0),
             fov: 53.7 / 180 * Math.PI
         });
+
+        var triangles = parseTriangles(potData);
 
         var renderLoop = (toImageFile: boolean = false) => {
             var parameters = getParameters();
@@ -126,11 +115,9 @@
 
             renderer.updateAccumulatedTransformation();
 
-            var triangles = parseTriangles(potData);
             for (var i = 0; i < triangles.length; i += 1) {
                 var shadingNormal = triangles[i].a.normal.clone();
-                shadingNormal.setZ(- shadingNormal.z);
-                renderer.flatColor = simpleShading(shadingNormal);
+                shadingNormal.setZ(-shadingNormal.z);
 
                 renderer.renderTriangle(triangles[i]);
             }
@@ -140,9 +127,10 @@
             if (parameters.rotateCamera) {
                 renderer.camera.position.applyAsHomogeneous(CS580GL.Matrix4.makeRotationY(1 / 180 * Math.PI));
                 renderer.camera.updateLookAtMatrix();
+                requestAnimationFrame(() => renderLoop());
+            } else {
+                setTimeout(() => requestAnimationFrame(() => renderLoop()), 100);
             }
-
-            requestAnimationFrame(() => renderLoop());
         };
 
         renderLoop(true);
@@ -177,6 +165,29 @@
         var scaleYElem = <HTMLInputElement> document.getElementById("scale-y");
         var scaleZElem = <HTMLInputElement> document.getElementById("scale-z");
 
+        // Utility function for getting parameters from input elements
+        var getParameters = () => {
+            return {
+                translate: {
+                    x: parseFloat(translateXElem.value),
+                    y: parseFloat(translateYElem.value),
+                    z: parseFloat(translateZElem.value)
+                },
+                rotate: {
+                    x: parseFloat(rotateXElem.value) / 180 * Math.PI,
+                    y: parseFloat(rotateYElem.value) / 180 * Math.PI,
+                    z: parseFloat(rotateZElem.value) / 180 * Math.PI
+                },
+                scale: {
+                    x: parseFloat(scaleXElem.value),
+                    y: parseFloat(scaleYElem.value),
+                    z: parseFloat(scaleZElem.value)
+                },
+                isCurrent: selectElem.value == "hw3",
+                rotateCamera: rotateCameraElem.checked
+            };
+        };
+
         // Utility function for flushing the Display into both the Canvas and a PPM file
         var flush = (display: CS580GL.Display, toImageFile: boolean = false) => {
             //display.reset(defaultBackgroundPixel); // remove this would be better, but wrong
@@ -198,51 +209,28 @@
             hw3ControlsElem.style.visibility = selectElem.value == "hw3" ? "visible" : "collapse";
 
             switch (selectElem.value) {
-            case "hw1":
-                canvasElem.height = canvasElem.width = 512;
-                loadTextFileAsync("data/rects", text => {
-                    renderHowework1(text, flush);
-                });
-                break;
+                case "hw1":
+                    canvasElem.height = canvasElem.width = 512;
+                    loadTextFileAsync("data/rects", text => {
+                        renderHomework1(text, flush);
+                    });
+                    break;
 
-            case "hw2":
-                canvasElem.height = canvasElem.width = 256;
-                loadTextFileAsync("data/pot4.screen.asc", text => {
-                    renderHomework2(text, flush);
-                });
-                break;
+                case "hw2":
+                    canvasElem.height = canvasElem.width = 256;
+                    loadTextFileAsync("data/pot4.screen.asc", text => {
+                        renderHomework2(text, flush);
+                    });
+                    break;
 
-            case "hw3":
-                canvasElem.height = canvasElem.width = 256;
+                case "hw3":
+                    canvasElem.height = canvasElem.width = 256;
+                    loadTextFileAsync("data/pot4.asc", text => {
+                        renderHomework3(text, getParameters, flush);
+                    });
+                    break;
 
-                var getParameters = () => {
-                    return {
-                        translate: {
-                            x: parseFloat(translateXElem.value),
-                            y: parseFloat(translateYElem.value),
-                            z: parseFloat(translateZElem.value)
-                        },
-                        rotate: {
-                            x: parseFloat(rotateXElem.value) / 180 * Math.PI,
-                            y: parseFloat(rotateYElem.value) / 180 * Math.PI,
-                            z: parseFloat(rotateZElem.value) / 180 * Math.PI
-                        },
-                        scale: {
-                            x: parseFloat(scaleXElem.value),
-                            y: parseFloat(scaleYElem.value),
-                            z: parseFloat(scaleZElem.value)
-                        },
-                        isCurrent: selectElem.value == "hw3",
-                        rotateCamera: rotateCameraElem.checked
-                    };
-                };
-
-                loadTextFileAsync("data/pot4.asc", text => {
-                    renderHomework3(text, getParameters, flush);
-                });
-                break;
-
-            default:
+                default:
             }
         };
 
@@ -258,7 +246,7 @@
                 o.value = i.value;
             };
         };
-        for(var i = 0; i < inputElems.length; i += 1) {
+        for (var i = 0; i < inputElems.length; i += 1) {
             var inputElem = inputElems[i];
             var outputElem: any = document.getElementById(inputElem.id + "-output");
             if (outputElem) {

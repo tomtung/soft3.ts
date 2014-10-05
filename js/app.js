@@ -1,13 +1,41 @@
 ﻿var CS580GL;
 (function (CS580GL) {
+    /** A simple utility function for clamping numbers */
+    function clamp(num, min, max) {
+        if (num < min) {
+            return min;
+        } else if (num > max) {
+            return max;
+        } else {
+            return num;
+        }
+    }
+    CS580GL.clamp = clamp;
+
+    function applyMixins(derivedConstructor, baseConstructors) {
+        baseConstructors.forEach(function (baseConstructor) {
+            Object.getOwnPropertyNames(baseConstructor.prototype).forEach(function (name) {
+                derivedConstructor.prototype[name] = baseConstructor.prototype[name];
+            });
+        });
+    }
+    CS580GL.applyMixins = applyMixins;
+
+    function floatEq(x, y) {
+        return Math.abs(x - y) < 1e-6;
+    }
+    CS580GL.floatEq = floatEq;
+})(CS580GL || (CS580GL = {}));
+/// <reference path="utils.ts" />
+var CS580GL;
+(function (CS580GL) {
     /** A Color object represents a color. */
     var Color = (function () {
-        function Color(//
-        /** Red channel value between 0 and 1. Default is 1. */
+        function Color(/** Red channel value between 0 and 1. Default is 1. */
         red, //
-        /** Red channel value between 0 and 1. Default is 1. */
+        /** Green channel value between 0 and 1. Default is 1. */
         green, //
-        /** Red channel value between 0 and 1. Default is 1. */
+        /** Blue channel value between 0 and 1. Default is 1. */
         blue) {
             if (typeof red === "undefined") { red = 1; }
             if (typeof green === "undefined") { green = 1; }
@@ -16,6 +44,10 @@
             this.green = green;
             this.blue = blue;
         }
+        Color.prototype.clone = function () {
+            return new Color(this.red, this.green, this.blue);
+        };
+
         Color.prototype.setRGB = function (red, green, blue) {
             this.red = red;
             this.green = green;
@@ -111,13 +143,39 @@
             return this;
         };
 
+        Color.multiplyScalar = function (color, scalar) {
+            return color.clone().multiplyScalar(scalar);
+        };
+
         Color.prototype.getHex = function () {
             return (this.redUint8 << 16) | (this.greenUint8 << 8) | this.blueUint8;
         };
 
         Color.prototype.getHexString = function () {
-            // Smart implementatin borrowed from three.js
+            // Smart implementation borrowed from three.js
             return ("000000" + this.getHex().toString(16)).slice(-6);
+        };
+
+        Color.prototype.clamp = function () {
+            this.red = CS580GL.clamp(this.red, 0, 1);
+            this.green = CS580GL.clamp(this.green, 0, 1);
+            this.blue = CS580GL.clamp(this.blue, 0, 1);
+            return this;
+        };
+
+        Color.clamp = function (color) {
+            return color.clone().clamp();
+        };
+
+        Color.prototype.add = function (other) {
+            this.red += other.red;
+            this.green += other.green;
+            this.blue += other.blue;
+            return this;
+        };
+
+        Color.add = function (c1, c2) {
+            return c1.clone().add(c2);
         };
         return Color;
     })();
@@ -181,29 +239,6 @@ var CS580GL;
     })();
     CS580GL.Pixel = Pixel;
 })(CS580GL || (CS580GL = {}));
-var CS580GL;
-(function (CS580GL) {
-    /** A simple utility function for clamping numbers */
-    function clamp(num, min, max) {
-        if (num < min) {
-            return min;
-        } else if (num > max) {
-            return max;
-        } else {
-            return num;
-        }
-    }
-    CS580GL.clamp = clamp;
-
-    function applyMixins(derivedCtor, baseCtors) {
-        baseCtors.forEach(function (baseCtor) {
-            Object.getOwnPropertyNames(baseCtor.prototype).forEach(function (name) {
-                derivedCtor.prototype[name] = baseCtor.prototype[name];
-            });
-        });
-    }
-    CS580GL.applyMixins = applyMixins;
-})(CS580GL || (CS580GL = {}));
 /// <reference path="Pixel.ts" />
 /// <reference path="Display.ts" />
 /// <reference path="utils.ts" />
@@ -213,11 +248,11 @@ var CS580GL;
     var PixelRef = (function () {
         function PixelRef(display, x, y) {
             this.display = display;
-            if (x < 0 || x >= display.xres || y < 0 || y >= display.yres) {
+            if (x < 0 || x >= display.width || y < 0 || y >= display.height) {
                 throw "Index out of bound.";
             }
 
-            this.zIndex = x + y * display.xres;
+            this.zIndex = x + y * display.width;
             this.rIndex = 4 * this.zIndex;
             this.gIndex = this.rIndex + 1;
             this.bIndex = this.gIndex + 1;
@@ -296,17 +331,17 @@ var CS580GL;
     * which contains an array of 32-bit RGBA pixel values and a 32-bit depth value for each pixel.
     *
     * Note that the RGBA array and the Z buffer are stored separately,
-    * since it is hard to efficiently use heterogenious arrays in JavaScript
+    * since it is hard to efficiently use heterogeneous arrays in JavaScript
     */
     var Display = (function () {
-        function Display(xres, yres) {
-            this.xres = xres;
-            this.yres = yres;
-            if (xres <= 0 || yres <= 0) {
+        function Display(width, height) {
+            this.width = width;
+            this.height = height;
+            if (width <= 0 || height <= 0) {
                 throw "Resolution must be positive.";
             }
-            this.rgbaBuffer = new Uint8Array(xres * yres * 4);
-            this.zBuffer = new Int32Array(xres * yres);
+            this.rgbaBuffer = new Uint8Array(width * height * 4);
+            this.zBuffer = new Int32Array(width * height);
             this.reset();
         }
         /** Returns a reference to the pixel at the position specified by x and y */
@@ -340,19 +375,19 @@ var CS580GL;
             if (typeof x === "undefined") { x = 0; }
             if (typeof y === "undefined") { y = 0; }
             var canvasContext = canvasElem.getContext("2d");
-            var imageData = canvasContext.createImageData(this.xres, this.yres);
+            var imageData = canvasContext.createImageData(this.width, this.height);
             imageData.data.set(this.rgbaBuffer);
             canvasContext.putImageData(imageData, x, y);
         };
 
         /** Flush the frame in the Netpbm image format (PPM) and return the result as a Blob */
         Display.prototype.toNetpbm = function () {
-            var result = "P3\n" + this.xres + " " + this.yres + "\n255\n";
+            var result = "P3\n" + this.width + " " + this.height + "\n255\n";
 
             for (var i = 0, xPos = 0; i < this.rgbaBuffer.length; i += 4, xPos += 1) {
                 result += this.rgbaBuffer[i] + " " + this.rgbaBuffer[i + 1] + " " + this.rgbaBuffer[i + 2];
 
-                if (xPos + 1 === this.xres) {
+                if (xPos + 1 === this.width) {
                     result += "\n";
                     xPos = 0;
                 } else {
@@ -369,7 +404,7 @@ var CS580GL;
 })(CS580GL || (CS580GL = {}));
 var CS580GL;
 (function (CS580GL) {
-    /** A 4x4 Matix */
+    /** A 4x4 Matrix */
     var Matrix4 = (function () {
         /** Construct a 4x4 matrix from a row-major array of numbers */
         function Matrix4(elements) {
@@ -625,12 +660,10 @@ var CS580GL;
 /// <reference path="Matrix4.ts" />
 var CS580GL;
 (function (CS580GL) {
-    ;
-
     /** A camera with perspective projection. The aspect ratio is always assumed to be 1. */
     var Camera = (function () {
         function Camera(parameters) {
-            /** The look-at matrix, which does both tranlsation and rotation. */
+            /** The look-at matrix, which does both translation and rotation. */
             this.lookAtMatrix = CS580GL.Matrix4.zeros();
             /** The perspective matrix. Note that z will be scaled into range [0, 1] */
             this.perspectiveMatrix = CS580GL.Matrix4.zeros();
@@ -725,9 +758,11 @@ var CS580GL;
 })(CS580GL || (CS580GL = {}));
 /// <reference path="Vector2.ts" />
 /// <reference path="Vector3.ts" />
-/// <reference path="MeshVertex.ts" />
+/// <reference path="Color.ts" />
 var CS580GL;
 (function (CS580GL) {
+    
+
     /** A TriangleFace object represents a triangle face in a triangle mesh */
     var MeshTriangle = (function () {
         function MeshTriangle(a, b, c) {
@@ -745,20 +780,29 @@ var CS580GL;
 /// <reference path="Display.ts" />
 /// <reference path="Camera.ts" />
 /// <reference path="MeshTriangle.ts" />
+/// <reference path="utils.ts" />
 var CS580GL;
 (function (CS580GL) {
-    /** Render objects contructor */
+    (function (ShadingMode) {
+        ShadingMode[ShadingMode["Flat"] = 0] = "Flat";
+    })(CS580GL.ShadingMode || (CS580GL.ShadingMode = {}));
+    var ShadingMode = CS580GL.ShadingMode;
+
+    /** Render objects constructor */
     var Renderer = (function () {
         function Renderer(display) {
             this.display = display;
             this.toWorldTransformationStack = [];
             this.accumulatedTransformation = CS580GL.Matrix4.identity();
+            this.shading = 0 /* Flat */;
+            this.ambientLight = new CS580GL.Color(0.0, 0.0, 0.0);
+            this.directionalLights = [];
             this.updateToScreenTransformation();
         }
         /** Update the to-screen transformation matrix. Must be invoked if  display is changed. */
         Renderer.prototype.updateToScreenTransformation = function () {
-            var halfX = this.display.xres / 2;
-            var halfY = this.display.yres / 2;
+            var halfX = this.display.width / 2;
+            var halfY = this.display.height / 2;
             this.toScreenTransformation = new CS580GL.Matrix4([
                 halfX, 0, 0, halfX,
                 0, -halfY, 0, halfY,
@@ -784,7 +828,7 @@ var CS580GL;
         };
 
         Renderer.prototype.renderPixel = function (x, y, z, color) {
-            if (z >= 0 && x >= 0 && y >= 0 && x < this.display.xres && y < this.display.yres) {
+            if (z >= 0 && x >= 0 && y >= 0 && x < this.display.width && y < this.display.height) {
                 var pixelRef = this.display.pixelAt(x, y);
                 if (pixelRef.z > z) {
                     pixelRef.setColor(color);
@@ -794,33 +838,60 @@ var CS580GL;
             return this;
         };
 
+        Renderer.prototype.drawScanLine = function (x1, z1, x2, z2, y, shadingValues) {
+            var m, x, z, color;
+            if (x1 >= this.display.width || x2 < 0) {
+                return;
+            }
+
+            if (this.shading === 0 /* Flat */) {
+                color = shadingValues.flatColor;
+            }
+
+            m = (z1 - z2) / (x1 - x2);
+            x = Math.max(0, Math.round(x1)); // Note: Use round instead of ceil
+            z = z1 + m * (x - x1);
+            for (; x < Math.min(x2, this.display.width - 1); x += 1, z += m) {
+                this.renderPixel(x, y, Math.round(z), color);
+            }
+        };
+
+        Renderer.prototype.shadeByNormal = function (normal) {
+            var color = this.ambientLight.clone();
+            this.directionalLights.forEach(function (l) {
+                var prod = normal.dot(l.direction);
+                if (prod < 0) {
+                    prod = -prod;
+                }
+                if (prod > 1) {
+                    prod = 1;
+                }
+                color.add(CS580GL.Color.multiplyScalar(l.color, prod));
+            });
+            return color.clamp();
+        };
+
         Renderer.prototype.renderScreenTriangle = function (triangle) {
-            var _this = this;
-            var floatEq = function (x, y) {
-                return Math.abs(x - y) < 1e-6;
-            };
-
-            var renderScanLine = function (x1, z1, x2, z2, y) {
-                var m, x, z;
-                if (x1 >= _this.display.xres || x2 < 0) {
-                    return;
-                }
-
-                m = (z1 - z2) / (x1 - x2);
-                x = Math.max(0, Math.round(x1)); // Note: Use round instead of ceil
-                z = z1 + m * (x - x1);
-                for (; x < Math.min(x2, _this.display.xres - 1); x += 1, z += m) {
-                    _this.renderPixel(x, y, Math.round(z), _this.flatColor);
-                }
-            };
-
             // Sort vertices
             var vertices = triangle.toVertexArray().sort(function (l, r) {
-                return !floatEq(l.position.y, r.position.y) ? l.position.y - r.position.y : l.position.x - r.position.x;
+                return !CS580GL.floatEq(l.position.y, r.position.y) ? l.position.y - r.position.y : l.position.x - r.position.x;
             });
             var pos = vertices.map(function (v) {
                 return v.position;
             });
+
+            // Set up shading
+            var shadingValues = {};
+            switch (this.shading) {
+                case 0 /* Flat */:
+                    shadingValues.flatColor = this.shadeByNormal(triangle.a.normal);
+                    break;
+                default:
+                    debugger;
+            }
+
+            // Initialize interpolation
+            var deltaY = [pos[0].y - pos[1].y, pos[0].y - pos[2].y, pos[1].y - pos[2].y];
 
             // Compute slopes dx/dy and dz/dy
             var edgeSlopeXY = function (vi, vj) {
@@ -850,36 +921,52 @@ var CS580GL;
 
             // Helper function that advances the scan line
             var upperAdvance = function () {
-                y += 1, x01 += mx01, z01 += mz01, x02 += mx02, z02 += mz02;
+                y += 1;
+                x01 += mx01;
+                z01 += mz01;
+                x02 += mx02;
+                z02 += mz02;
             };
             var lowerAdvance = function () {
-                y += 1, x12 += mx12, z12 += mz12, x02 += mx02, z02 += mz02;
+                y += 1;
+                x12 += mx12;
+                z12 += mz12;
+                x02 += mx02;
+                z02 += mz02;
             };
 
             if (isMidVertexLeft) {
                 for (; y < pos[1].y; upperAdvance()) {
-                    renderScanLine(x01, z01, x02, z02, y);
+                    this.drawScanLine(x01, z01, x02, z02, y, shadingValues);
                 }
 
                 for (; y <= pos[2].y; lowerAdvance()) {
-                    renderScanLine(x12, z12, x02, z02, y);
+                    this.drawScanLine(x12, z12, x02, z02, y, shadingValues);
                 }
             } else {
                 for (; y < pos[1].y; upperAdvance()) {
-                    renderScanLine(x02, z02, x01, z01, y);
+                    this.drawScanLine(x02, z02, x01, z01, y, shadingValues);
                 }
 
                 for (; y <= pos[2].y; lowerAdvance()) {
-                    renderScanLine(x02, z02, x12, z12, y);
+                    this.drawScanLine(x02, z02, x12, z12, y, shadingValues);
                 }
             }
 
             return this;
         };
 
+        Renderer.prototype.getTransformedVertex = function (vertex) {
+            // Note that normal is not transformed, because we don't transform lighting either
+            return {
+                position: vertex.position.clone().applyAsHomogeneous(this.accumulatedTransformation),
+                normal: vertex.normal,
+                textureCoordinate: vertex.textureCoordinate
+            };
+        };
+
         Renderer.prototype.renderTriangle = function (triangle) {
-            // Note that normal and texture are ignored for the moement
-            var screenTriangle = new CS580GL.MeshTriangle({ position: triangle.a.position.clone().applyAsHomogeneous(this.accumulatedTransformation) }, { position: triangle.b.position.clone().applyAsHomogeneous(this.accumulatedTransformation) }, { position: triangle.c.position.clone().applyAsHomogeneous(this.accumulatedTransformation) });
+            var screenTriangle = new CS580GL.MeshTriangle(this.getTransformedVertex(triangle.a), this.getTransformedVertex(triangle.b), this.getTransformedVertex(triangle.c));
             this.renderScreenTriangle(screenTriangle);
             return this;
         };
@@ -893,7 +980,7 @@ var CS580GL;
     var defaultBackgroundPixel = new CS580GL.Pixel().setColor(defaultBackgroundColor);
 
     // ---- Homework 1 ----
-    function renderHowework1(rectData, flush) {
+    function renderHomework1(rectData, flush) {
         var display = new CS580GL.Display(512, 512).reset(defaultBackgroundPixel);
 
         var scaleRgb = function (value) {
@@ -919,19 +1006,6 @@ var CS580GL;
         flush(display, true);
     }
 
-    // Helper function for Homework 2 & 3: flat shading
-    function simpleShading(normal) {
-        var light = new CS580GL.Vector3(0.707, 0.5, 0.5);
-        var coef = CS580GL.Vector3.dot(normal, light);
-        if (coef < 0) {
-            coef = -coef;
-        }
-        if (coef > 1) {
-            coef = 1;
-        }
-        return new CS580GL.Color(0.95, 0.65, 0.88).multiplyScalar(coef);
-    }
-
     // Helper function for Homework 2 & 3: parse triangle data string
     function parseTriangles(trianglesData, invertZ) {
         if (typeof invertZ === "undefined") { invertZ = true; }
@@ -944,7 +1018,7 @@ var CS580GL;
             return {
                 position: new CS580GL.Vector3(numbers[0], numbers[1], invertZ ? -numbers[2] : numbers[2]),
                 normal: new CS580GL.Vector3(numbers[3], numbers[4], invertZ ? -numbers[5] : numbers[5]),
-                uv: new CS580GL.Vector2(numbers[6], numbers[7])
+                textureCoordinate: new CS580GL.Vector2(numbers[6], numbers[7])
             };
         };
 
@@ -965,10 +1039,14 @@ var CS580GL;
     function renderHomework2(screenPotData, flush) {
         var display = new CS580GL.Display(256, 256).reset(defaultBackgroundPixel);
         var renderer = new CS580GL.Renderer(display);
+        renderer.shading = 0 /* Flat */;
+        renderer.directionalLights.push({
+            direction: new CS580GL.Vector3(0.707, 0.5, 0.5),
+            color: new CS580GL.Color(0.95, 0.65, 0.88)
+        });
 
         var triangles = parseTriangles(screenPotData, false);
         for (var i = 0; i < triangles.length; i += 1) {
-            renderer.flatColor = simpleShading(triangles[i].a.normal);
             renderer.renderScreenTriangle(triangles[i]);
         }
 
@@ -981,12 +1059,20 @@ var CS580GL;
 
         var renderer = new CS580GL.Renderer(display);
 
+        renderer.shading = 0 /* Flat */;
+        renderer.directionalLights.push({
+            direction: new CS580GL.Vector3(0.707, 0.5, 0.5),
+            color: new CS580GL.Color(0.95, 0.65, 0.88)
+        });
+
         renderer.camera = new CS580GL.Camera({
             position: new CS580GL.Vector3(13.2, -8.7, 14.8),
             lookAtTarget: new CS580GL.Vector3(0.8, 0.7, -4.5),
             up: new CS580GL.Vector3(-0.2, 1.0, 0),
             fov: 53.7 / 180 * Math.PI
         });
+
+        var triangles = parseTriangles(potData);
 
         var renderLoop = function (toImageFile) {
             if (typeof toImageFile === "undefined") { toImageFile = false; }
@@ -1007,11 +1093,9 @@ var CS580GL;
 
             renderer.updateAccumulatedTransformation();
 
-            var triangles = parseTriangles(potData);
             for (var i = 0; i < triangles.length; i += 1) {
                 var shadingNormal = triangles[i].a.normal.clone();
                 shadingNormal.setZ(-shadingNormal.z);
-                renderer.flatColor = simpleShading(shadingNormal);
 
                 renderer.renderTriangle(triangles[i]);
             }
@@ -1021,11 +1105,16 @@ var CS580GL;
             if (parameters.rotateCamera) {
                 renderer.camera.position.applyAsHomogeneous(CS580GL.Matrix4.makeRotationY(1 / 180 * Math.PI));
                 renderer.camera.updateLookAtMatrix();
+                requestAnimationFrame(function () {
+                    return renderLoop();
+                });
+            } else {
+                setTimeout(function () {
+                    return requestAnimationFrame(function () {
+                        return renderLoop();
+                    });
+                }, 100);
             }
-
-            requestAnimationFrame(function () {
-                return renderLoop();
-            });
         };
 
         renderLoop(true);
@@ -1060,6 +1149,29 @@ var CS580GL;
         var scaleYElem = document.getElementById("scale-y");
         var scaleZElem = document.getElementById("scale-z");
 
+        // Utility function for getting parameters from input elements
+        var getParameters = function () {
+            return {
+                translate: {
+                    x: parseFloat(translateXElem.value),
+                    y: parseFloat(translateYElem.value),
+                    z: parseFloat(translateZElem.value)
+                },
+                rotate: {
+                    x: parseFloat(rotateXElem.value) / 180 * Math.PI,
+                    y: parseFloat(rotateYElem.value) / 180 * Math.PI,
+                    z: parseFloat(rotateZElem.value) / 180 * Math.PI
+                },
+                scale: {
+                    x: parseFloat(scaleXElem.value),
+                    y: parseFloat(scaleYElem.value),
+                    z: parseFloat(scaleZElem.value)
+                },
+                isCurrent: selectElem.value == "hw3",
+                rotateCamera: rotateCameraElem.checked
+            };
+        };
+
         // Utility function for flushing the Display into both the Canvas and a PPM file
         var flush = function (display, toImageFile) {
             if (typeof toImageFile === "undefined") { toImageFile = false; }
@@ -1085,7 +1197,7 @@ var CS580GL;
                 case "hw1":
                     canvasElem.height = canvasElem.width = 512;
                     loadTextFileAsync("data/rects", function (text) {
-                        renderHowework1(text, flush);
+                        renderHomework1(text, flush);
                     });
                     break;
 
@@ -1098,29 +1210,6 @@ var CS580GL;
 
                 case "hw3":
                     canvasElem.height = canvasElem.width = 256;
-
-                    var getParameters = function () {
-                        return {
-                            translate: {
-                                x: parseFloat(translateXElem.value),
-                                y: parseFloat(translateYElem.value),
-                                z: parseFloat(translateZElem.value)
-                            },
-                            rotate: {
-                                x: parseFloat(rotateXElem.value) / 180 * Math.PI,
-                                y: parseFloat(rotateYElem.value) / 180 * Math.PI,
-                                z: parseFloat(rotateZElem.value) / 180 * Math.PI
-                            },
-                            scale: {
-                                x: parseFloat(scaleXElem.value),
-                                y: parseFloat(scaleYElem.value),
-                                z: parseFloat(scaleZElem.value)
-                            },
-                            isCurrent: selectElem.value == "hw3",
-                            rotateCamera: rotateCameraElem.checked
-                        };
-                    };
-
                     loadTextFileAsync("data/pot4.asc", function (text) {
                         renderHomework3(text, getParameters, flush);
                     });

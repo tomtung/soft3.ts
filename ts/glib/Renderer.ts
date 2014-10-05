@@ -1,20 +1,32 @@
 ﻿/// <reference path="Display.ts" />
 /// <reference path="Camera.ts" />
 /// <reference path="MeshTriangle.ts" />
+/// <reference path="utils.ts" />
 
 module CS580GL {
-    export interface IRenderAttributes {
-        flatColor?: Color;
-        camera? : Camera;
+
+    export interface IDirectionalLight {
+        direction: Vector3
+        color: Color
     }
 
-    /** Render objects contructor */
+    export enum ShadingMode {
+        Flat
+    }
+
+    export interface IShadingValues {
+        flatColor?: Color
+    }
+
+    /** Render objects constructor */
     export class Renderer {
-        flatColor: Color;
         camera: Camera;
         toWorldTransformationStack: Matrix4[] = [];
         toScreenTransformation: Matrix4;
         accumulatedTransformation: Matrix4 = Matrix4.identity();
+        shading: ShadingMode = ShadingMode.Flat;
+        ambientLight: Color = new Color(0.0, 0.0, 0.0);
+        directionalLights: IDirectionalLight[] = [];
 
         constructor(public display: Display) {
             this.updateToScreenTransformation();
@@ -22,8 +34,8 @@ module CS580GL {
 
         /** Update the to-screen transformation matrix. Must be invoked if  display is changed. */
         updateToScreenTransformation(): Renderer {
-            var halfX = this.display.xres / 2;
-            var halfY = this.display.yres / 2;
+            var halfX = this.display.width / 2;
+            var halfY = this.display.height / 2;
             this.toScreenTransformation = new Matrix4([
                 halfX, 0, 0, halfX,
                 0, -halfY, 0, halfY,
@@ -51,7 +63,7 @@ module CS580GL {
         }
 
         renderPixel(x: number, y: number, z: number, color: Color): Renderer {
-            if (z >= 0 && x >= 0 && y >= 0 && x < this.display.xres && y < this.display.yres) {
+            if (z >= 0 && x >= 0 && y >= 0 && x < this.display.width && y < this.display.height) {
                 var pixelRef = this.display.pixelAt(x, y);
                 if (pixelRef.z > z) {
                     pixelRef.setColor(color);
@@ -61,30 +73,62 @@ module CS580GL {
             return this;
         }
 
-        renderScreenTriangle(triangle: MeshTriangle): Renderer {
-            var floatEq = (x: number, y: number) => Math.abs(x - y) < 1e-6;
-
-            var renderScanLine = (x1: number, z1: number, x2: number, z2: number, y: number) => {
-                var m: number, x: number, z: number;
-                if (x1 >= this.display.xres || x2 < 0) {
-                    return;
-                }
-
-                m = (z1 - z2) / (x1 - x2);
-                x = Math.max(0, Math.round(x1)); // Note: Use round instead of ceil
-                z = z1 + m * (x - x1);
-                for (; x < Math.min(x2, this.display.xres - 1); x += 1, z += m) {
-                    this.renderPixel(x, y, Math.round(z), this.flatColor);
-                }
+        drawScanLine(x1: number, z1: number, x2: number, z2: number, y: number, shadingValues: IShadingValues) {
+            var m: number, x: number, z: number, color: Color;
+            if (x1 >= this.display.width || x2 < 0) {
+                return;
             }
 
+            if (this.shading === ShadingMode.Flat) {
+                color = shadingValues.flatColor;
+            }
+
+            m = (z1 - z2) / (x1 - x2);
+            x = Math.max(0, Math.round(x1)); // Note: Use round instead of ceil
+            z = z1 + m * (x - x1);
+            for (; x < Math.min(x2, this.display.width - 1); x += 1, z += m) {
+                this.renderPixel(x, y, Math.round(z), color);
+            }
+        }
+
+        private shadeByNormal(normal: Vector3): Color {
+            var color = this.ambientLight.clone();
+            this.directionalLights.forEach(l => {
+                var prod = normal.dot(l.direction);
+                if (prod < 0) {
+                    prod = -prod;
+                }
+                if (prod > 1) {
+                    prod = 1;
+                }
+                color.add(
+                    Color.multiplyScalar(l.color, prod)
+                );
+            });
+            return color.clamp();
+        }
+
+        renderScreenTriangle(triangle: MeshTriangle): Renderer {
             // Sort vertices
             var vertices = triangle.toVertexArray().sort((l, r) =>
-                !floatEq(l.position.y, r.position.y) ?
-                l.position.y - r.position.y :
-                l.position.x - r.position.x
+                    !floatEq(l.position.y, r.position.y) ?
+                        l.position.y - r.position.y :
+                        l.position.x - r.position.x
             );
             var pos = vertices.map(v => v.position);
+
+            // Set up shading
+            var shadingValues: any = {};
+            switch(this.shading) {
+                case ShadingMode.Flat:
+                    shadingValues.flatColor = this.shadeByNormal(triangle.a.normal);
+                    break;
+                default:
+                    debugger;
+            }
+
+            // Initialize interpolation
+            var deltaY = [pos[0].y - pos[1].y, pos[0].y - pos[2].y, pos[1].y - pos[2].y];
 
             // Compute slopes dx/dy and dz/dy
             var edgeSlopeXY = (vi: number, vj: number) => (pos[vi].x - pos[vj].x) / (pos[vi].y - pos[vj].y);
@@ -115,39 +159,55 @@ module CS580GL {
 
             // Helper function that advances the scan line
             var upperAdvance = (): void => {
-                y += 1, x01 += mx01, z01 += mz01, x02 += mx02, z02 += mz02;
+                y += 1;
+                x01 += mx01;
+                z01 += mz01;
+                x02 += mx02;
+                z02 += mz02;
             };
             var lowerAdvance = (): void => {
-                y += 1, x12 += mx12, z12 += mz12, x02 += mx02, z02 += mz02;
-            }
+                y += 1;
+                x12 += mx12;
+                z12 += mz12;
+                x02 += mx02;
+                z02 += mz02;
+            };
 
             if (isMidVertexLeft) {
                 for (; y < pos[1].y; upperAdvance()) {
-                    renderScanLine(x01, z01, x02, z02, y);
+                    this.drawScanLine(x01, z01, x02, z02, y, shadingValues);
                 }
 
                 for (; y <= pos[2].y; lowerAdvance()) {
-                    renderScanLine(x12, z12, x02, z02, y);
+                    this.drawScanLine(x12, z12, x02, z02, y, shadingValues);
                 }
             } else {
                 for (; y < pos[1].y; upperAdvance()) {
-                    renderScanLine(x02, z02, x01, z01, y);
+                    this.drawScanLine(x02, z02, x01, z01, y, shadingValues);
                 }
 
                 for (; y <= pos[2].y; lowerAdvance()) {
-                    renderScanLine(x02, z02, x12, z12, y);
+                    this.drawScanLine(x02, z02, x12, z12, y, shadingValues);
                 }
             }
 
             return this;
         }
 
+        private getTransformedVertex(vertex: IMeshVertex): IMeshVertex {
+            // Note that normal is not transformed, because we don't transform lighting either
+            return {
+                position: vertex.position.clone().applyAsHomogeneous(this.accumulatedTransformation),
+                normal: vertex.normal,
+                textureCoordinate: vertex.textureCoordinate
+            };
+        }
+
         renderTriangle(triangle: MeshTriangle): Renderer {
-            // Note that normal and texture are ignored for the moement
             var screenTriangle = new MeshTriangle(
-                { position: triangle.a.position.clone().applyAsHomogeneous(this.accumulatedTransformation) },
-                { position: triangle.b.position.clone().applyAsHomogeneous(this.accumulatedTransformation) },
-                { position: triangle.c.position.clone().applyAsHomogeneous(this.accumulatedTransformation) }
+                this.getTransformedVertex(triangle.a),
+                this.getTransformedVertex(triangle.b),
+                this.getTransformedVertex(triangle.c)
             );
             this.renderScreenTriangle(screenTriangle);
             return this;

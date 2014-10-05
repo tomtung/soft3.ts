@@ -10,11 +10,16 @@
         }
     }
 
-    export function applyMixins(derivedCtor: any, baseCtors: any[]) {
-        baseCtors.forEach(baseCtor => {
-            Object.getOwnPropertyNames(baseCtor.prototype).forEach(name => {
-                derivedCtor.prototype[name] = baseCtor.prototype[name];
+    export function applyMixins(derivedConstructor: any, baseConstructors: any[]) {
+        baseConstructors.forEach(baseConstructor => {
+            Object.getOwnPropertyNames(baseConstructor.prototype).forEach(name => {
+                derivedConstructor.prototype[name] = baseConstructor.prototype[name];
             })
         });
+    }
+
+
+    export function floatEq(x: number, y: number): boolean {
+        return Math.abs(x - y) < 1e-6;
     }
 }

@@ -1,5 +1,5 @@
 ﻿module CS580GL {
-    /** A 4x4 Matix */
+    /** A 4x4 Matrix */
     export class Matrix4 {
         /** A row-major array of matrix elements */
         elements: Float32Array = new Float32Array(16);
@@ -55,25 +55,25 @@
 
             this.elements.set([
                 // 1st row
-                te[0] * oe[0] + te[1] * oe[4] + te[2] * oe[8] + te[3] * oe[12],
-                te[0] * oe[1] + te[1] * oe[5] + te[2] * oe[9] + te[3] * oe[13],
-                te[0] * oe[2] + te[1] * oe[6] + te[2] * oe[10] + te[3] * oe[14],
-                te[0] * oe[3] + te[1] * oe[7] + te[2] * oe[11] + te[3] * oe[15],
+                    te[0] * oe[0] + te[1] * oe[4] + te[2] * oe[8] + te[3] * oe[12],
+                    te[0] * oe[1] + te[1] * oe[5] + te[2] * oe[9] + te[3] * oe[13],
+                    te[0] * oe[2] + te[1] * oe[6] + te[2] * oe[10] + te[3] * oe[14],
+                    te[0] * oe[3] + te[1] * oe[7] + te[2] * oe[11] + te[3] * oe[15],
                 // 2nd row
-                te[4] * oe[0] + te[5] * oe[4] + te[6] * oe[8] + te[7] * oe[12],
-                te[4] * oe[1] + te[5] * oe[5] + te[6] * oe[9] + te[7] * oe[13],
-                te[4] * oe[2] + te[5] * oe[6] + te[6] * oe[10] + te[7] * oe[14],
-                te[4] * oe[3] + te[5] * oe[7] + te[6] * oe[11] + te[7] * oe[15],
+                    te[4] * oe[0] + te[5] * oe[4] + te[6] * oe[8] + te[7] * oe[12],
+                    te[4] * oe[1] + te[5] * oe[5] + te[6] * oe[9] + te[7] * oe[13],
+                    te[4] * oe[2] + te[5] * oe[6] + te[6] * oe[10] + te[7] * oe[14],
+                    te[4] * oe[3] + te[5] * oe[7] + te[6] * oe[11] + te[7] * oe[15],
                 // 3rd row
-                te[8] * oe[0] + te[9] * oe[4] + te[10] * oe[8] + te[11] * oe[12],
-                te[8] * oe[1] + te[9] * oe[5] + te[10] * oe[9] + te[11] * oe[13],
-                te[8] * oe[2] + te[9] * oe[6] + te[10] * oe[10] + te[11] * oe[14],
-                te[8] * oe[3] + te[9] * oe[7] + te[10] * oe[11] + te[11] * oe[15],
+                    te[8] * oe[0] + te[9] * oe[4] + te[10] * oe[8] + te[11] * oe[12],
+                    te[8] * oe[1] + te[9] * oe[5] + te[10] * oe[9] + te[11] * oe[13],
+                    te[8] * oe[2] + te[9] * oe[6] + te[10] * oe[10] + te[11] * oe[14],
+                    te[8] * oe[3] + te[9] * oe[7] + te[10] * oe[11] + te[11] * oe[15],
                 // 4th row
-                te[12] * oe[0] + te[13] * oe[4] + te[14] * oe[8] + te[15] * oe[12],
-                te[12] * oe[1] + te[13] * oe[5] + te[14] * oe[9] + te[15] * oe[13],
-                te[12] * oe[2] + te[13] * oe[6] + te[14] * oe[10] + te[15] * oe[14],
-                te[12] * oe[3] + te[13] * oe[7] + te[14] * oe[11] + te[15] * oe[15]
+                    te[12] * oe[0] + te[13] * oe[4] + te[14] * oe[8] + te[15] * oe[12],
+                    te[12] * oe[1] + te[13] * oe[5] + te[14] * oe[9] + te[15] * oe[13],
+                    te[12] * oe[2] + te[13] * oe[6] + te[14] * oe[10] + te[15] * oe[14],
+                    te[12] * oe[3] + te[13] * oe[7] + te[14] * oe[11] + te[15] * oe[15]
             ]);
 
             return this;
@@ -109,7 +109,7 @@
             var s = Math.sin(theta);
             var c = Math.cos(theta);
             return new Matrix4([
-                1, 0,  0, 0,
+                1, 0, 0, 0,
                 0, c, -s, 0,
                 0, s, c, 0,
                 0, 0, 0, 1

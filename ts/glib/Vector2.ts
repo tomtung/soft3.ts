@@ -1,10 +1,8 @@
 ﻿module CS580GL {
     /** A Vector2 object represents a 2-D Vector */
     export class Vector2 {
-        constructor(
-            public x: number = 0,
-            public y: number = 0
-            ) { }
+        constructor(public x: number = 0, public y: number = 0) {
+        }
 
         setXY(x: number, y: number): Vector2 {
             this.x = x;

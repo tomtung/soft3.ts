@@ -1,7 +1,7 @@
 /// <reference path="Color.ts" />
 
 module CS580GL {
-	/** A Pixel object represents a pixel with RGBA color and depth information. */
+    /** A Pixel object represents a pixel with RGBA color and depth information. */
     export class Pixel {
         redUint8: number;
         greenUint8: number;
@@ -11,7 +11,7 @@ module CS580GL {
 
         constructor(pixelValue: any = {}) {
             this.redUint8 = pixelValue.redUint8 || 0;
-            this.greenUint8 = pixelValue.greenUint8|| 0;
+            this.greenUint8 = pixelValue.greenUint8 || 0;
             this.blueUint8 = pixelValue.blueUint8 || 0;
             this.alphaUint8 = pixelValue.alphaUint8 || 0xff;
             this.z = pixelValue.z || 0x7fffffff;

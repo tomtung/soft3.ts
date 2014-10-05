@@ -1,16 +1,23 @@
+﻿declare module CS580GL {
+    /** A simple utility function for clamping numbers */
+    function clamp(num: number, min: number, max: number): number;
+    function applyMixins(derivedConstructor: any, baseConstructors: any[]): void;
+    function floatEq(x: number, y: number): boolean;
+}
 declare module CS580GL {
     /** A Color object represents a color. */
     class Color {
         /** Red channel value between 0 and 1. Default is 1. */
         public red: number;
-        /** Red channel value between 0 and 1. Default is 1. */
+        /** Green channel value between 0 and 1. Default is 1. */
         public green: number;
-        /** Red channel value between 0 and 1. Default is 1. */
+        /** Blue channel value between 0 and 1. Default is 1. */
         public blue: number;
         constructor(/** Red channel value between 0 and 1. Default is 1. */
-            red?: number, /** Red channel value between 0 and 1. Default is 1. */
-            green?: number, /** Red channel value between 0 and 1. Default is 1. */
+            red?: number, /** Green channel value between 0 and 1. Default is 1. */
+            green?: number, /** Blue channel value between 0 and 1. Default is 1. */
             blue?: number);
+        public clone(): Color;
         public setRGB(red: number, green: number, blue: number): Color;
         public setRGBUint8(redUint8: number, greenUint8: number, blueUint8: number): Color;
         static fromRGBUint8(redUint8: number, greenUint8: number, blueUint8: number): Color;
@@ -25,8 +32,13 @@ declare module CS580GL {
         public blueUint8 : number;
         public setBlueUint8(value: number): Color;
         public multiplyScalar(scalar: number): Color;
+        static multiplyScalar(color: Color, scalar: number): Color;
         public getHex(): number;
         public getHexString(): string;
+        public clamp(): Color;
+        static clamp(color: Color): Color;
+        public add(other: Color): Color;
+        static add(c1: Color, c2: Color): Color;
     }
 }
 declare module CS580GL {
@@ -46,11 +58,6 @@ declare module CS580GL {
         public copyFrom(that: Pixel): Pixel;
         public setColor(color: Color): Pixel;
     }
-}
-declare module CS580GL {
-    /** A simple utility function for clamping numbers */
-    function clamp(num: number, min: number, max: number): number;
-    function applyMixins(derivedCtor: any, baseCtors: any[]): void;
 }
 declare module CS580GL {
     /** A PixelRef object is a reference to a pixel in a Display object. */
@@ -82,15 +89,15 @@ declare module CS580GL {
     * which contains an array of 32-bit RGBA pixel values and a 32-bit depth value for each pixel.
     *
     * Note that the RGBA array and the Z buffer are stored separately,
-    * since it is hard to efficiently use heterogenious arrays in JavaScript
+    * since it is hard to efficiently use heterogeneous arrays in JavaScript
     */
     class Display {
-        public xres: number;
-        public yres: number;
+        public width: number;
+        public height: number;
         public rgbaBuffer: Uint8Array;
         public zBuffer: Int32Array;
         static Z_MAX: number;
-        constructor(xres: number, yres: number);
+        constructor(width: number, height: number);
         /** Returns a reference to the pixel at the position specified by x and y */
         public pixelAt(x: number, y: number): PixelRef;
         /** Reset the entire frame buffer with the (optional) given pixel value */
@@ -102,7 +109,7 @@ declare module CS580GL {
     }
 }
 declare module CS580GL {
-    /** A 4x4 Matix */
+    /** A 4x4 Matrix */
     class Matrix4 {
         /** A row-major array of matrix elements */
         public elements: Float32Array;
@@ -174,7 +181,7 @@ declare module CS580GL {
     }
     /** A camera with perspective projection. The aspect ratio is always assumed to be 1. */
     class Camera {
-        /** The look-at matrix, which does both tranlsation and rotation. */
+        /** The look-at matrix, which does both translation and rotation. */
         public lookAtMatrix: Matrix4;
         /** The perspective matrix. Note that z will be scaled into range [0, 1] */
         public perspectiveMatrix: Matrix4;
@@ -211,15 +218,13 @@ declare module CS580GL {
 declare module CS580GL {
     /**
     * A MeshVertex object represents a vertex,
-    * including its position, normal, and UV mapping values
+    * including its position, normal, and texture mapping coordinate values
     */
     interface IMeshVertex {
         position: Vector3;
         normal?: Vector3;
-        uv?: Vector2;
+        textureCoordinate?: Vector2;
     }
-}
-declare module CS580GL {
     /** A TriangleFace object represents a triangle face in a triangle mesh */
     class MeshTriangle {
         public a: IMeshVertex;
@@ -230,25 +235,36 @@ declare module CS580GL {
     }
 }
 declare module CS580GL {
-    interface IRenderAttributes {
-        flatColor?: Color;
-        camera?: Camera;
+    interface IDirectionalLight {
+        direction: Vector3;
+        color: Color;
     }
-    /** Render objects contructor */
+    enum ShadingMode {
+        Flat = 0,
+    }
+    interface IShadingValues {
+        flatColor?: Color;
+    }
+    /** Render objects constructor */
     class Renderer {
         public display: Display;
-        public flatColor: Color;
         public camera: Camera;
         public toWorldTransformationStack: Matrix4[];
         public toScreenTransformation: Matrix4;
         public accumulatedTransformation: Matrix4;
+        public shading: ShadingMode;
+        public ambientLight: Color;
+        public directionalLights: IDirectionalLight[];
         constructor(display: Display);
         /** Update the to-screen transformation matrix. Must be invoked if  display is changed. */
         public updateToScreenTransformation(): Renderer;
         /** Update the perspective matrix. Must be invoked if camera, display, or to-world transformations are changed. */
         public updateAccumulatedTransformation(): Renderer;
         public renderPixel(x: number, y: number, z: number, color: Color): Renderer;
+        public drawScanLine(x1: number, z1: number, x2: number, z2: number, y: number, shadingValues: IShadingValues): void;
+        private shadeByNormal(normal);
         public renderScreenTriangle(triangle: MeshTriangle): Renderer;
+        private getTransformedVertex(vertex);
         public renderTriangle(triangle: MeshTriangle): Renderer;
     }
 }
