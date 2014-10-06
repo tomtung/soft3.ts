@@ -136,6 +136,17 @@ var CS580GL;
             return this;
         };
 
+        Color.prototype.multiply = function (other) {
+            this.red *= other.red;
+            this.green *= other.green;
+            this.blue *= other.blue;
+            return this;
+        };
+
+        Color.multiply = function (c1, c2) {
+            return c1.clone().multiply(c2);
+        };
+
         Color.prototype.multiplyScalar = function (scalar) {
             this.red = this.red * scalar;
             this.green = this.green * scalar;
@@ -157,6 +168,9 @@ var CS580GL;
         };
 
         Color.prototype.clamp = function () {
+            if (this.red > 1 && this.green > 1 && this.blue > 1) {
+                debugger;
+            }
             this.red = CS580GL.clamp(this.red, 0, 1);
             this.green = CS580GL.clamp(this.green, 0, 1);
             this.blue = CS580GL.clamp(this.blue, 0, 1);
@@ -176,6 +190,17 @@ var CS580GL;
 
         Color.add = function (c1, c2) {
             return c1.clone().add(c2);
+        };
+
+        Color.prototype.subtract = function (other) {
+            this.red -= other.red;
+            this.green -= other.green;
+            this.blue -= other.blue;
+            return this;
+        };
+
+        Color.subtract = function (c1, c2) {
+            return c1.clone().subtract(c2);
         };
         return Color;
     })();
@@ -619,11 +644,29 @@ var CS580GL;
             return v1.clone().cross(v2);
         };
 
+        Vector3.prototype.multiplyScalar = function (scalar) {
+            this.x *= scalar;
+            this.y *= scalar;
+            this.z *= scalar;
+            return this;
+        };
+
+        Vector3.multiplyScalar = function (vec, scalar) {
+            return vec.clone().multiplyScalar(scalar);
+        };
+
         Vector3.prototype.divideScalar = function (scalar) {
-            var scalarInv = 1 / scalar;
-            this.x *= scalarInv;
-            this.y *= scalarInv;
-            this.z *= scalarInv;
+            return this.multiplyScalar(1 / scalar);
+        };
+
+        Vector3.divideScalar = function (vec, scalar) {
+            return Vector3.multiplyScalar(vec, 1 / scalar);
+        };
+
+        Vector3.prototype.negate = function () {
+            this.x = -this.x;
+            this.y = -this.y;
+            this.z = -this.z;
             return this;
         };
 
@@ -635,6 +678,15 @@ var CS580GL;
             var e = matrix.elements;
             var wInv = 1 / (e[12] * this.x + e[13] * this.y + e[14] * this.z + e[15]);
             return this.setXYZ(wInv * (e[0] * this.x + e[1] * this.y + e[2] * this.z + e[3]), wInv * (e[4] * this.x + e[5] * this.y + e[6] * this.z + e[7]), wInv * (e[8] * this.x + e[9] * this.y + e[10] * this.z + e[11]));
+        };
+
+        /**
+        * Transforms the direction of this vector by the 3 x 3 subset of the matrix, and then normalizes the result.
+        * @param matrix
+        */
+        Vector3.prototype.transformDirection = function (matrix) {
+            var e = matrix.elements;
+            return this.setXYZ(e[0] * this.x + e[1] * this.y + e[2] * this.z, e[4] * this.x + e[5] * this.y + e[6] * this.z, e[8] * this.x + e[9] * this.y + e[10] * this.z).normalize();
         };
 
         Vector3.prototype.lengthSq = function () {
@@ -785,6 +837,8 @@ var CS580GL;
 (function (CS580GL) {
     (function (ShadingMode) {
         ShadingMode[ShadingMode["Flat"] = 0] = "Flat";
+        ShadingMode[ShadingMode["Gouraud"] = 1] = "Gouraud";
+        ShadingMode[ShadingMode["Phong"] = 2] = "Phong";
     })(CS580GL.ShadingMode || (CS580GL.ShadingMode = {}));
     var ShadingMode = CS580GL.ShadingMode;
 
@@ -793,10 +847,16 @@ var CS580GL;
         function Renderer(display) {
             this.display = display;
             this.toWorldTransformationStack = [];
+            this.normalTransformationStack = [];
             this.accumulatedTransformation = CS580GL.Matrix4.identity();
+            this.accumulatedNormalTransformation = CS580GL.Matrix4.identity();
             this.shading = 0 /* Flat */;
             this.ambientLight = new CS580GL.Color(0.0, 0.0, 0.0);
+            this.ambientCoefficient = 1.0;
             this.directionalLights = [];
+            this.diffuseCoefficient = 1.0;
+            this.specularCoefficient = 0.0;
+            this.shininess = 0.0;
             this.updateToScreenTransformation();
         }
         /** Update the to-screen transformation matrix. Must be invoked if  display is changed. */
@@ -822,6 +882,11 @@ var CS580GL;
                 this.toWorldTransformationStack.forEach(function (m) {
                     _this.accumulatedTransformation.multiply(m);
                 });
+
+                this.accumulatedNormalTransformation.copyFrom(this.camera.lookAtMatrix);
+                this.normalTransformationStack.forEach(function (m) {
+                    _this.accumulatedNormalTransformation.multiply(m);
+                });
             }
 
             return this;
@@ -838,118 +903,279 @@ var CS580GL;
             return this;
         };
 
-        Renderer.prototype.drawScanLine = function (x1, z1, x2, z2, y, shadingValues) {
-            var m, x, z, color;
+        Renderer.prototype.drawScanLine = function (x1, z1, x2, z2, y, shadingParams) {
+            var _this = this;
+            var mZ, x, z, invDeltaX, roundXOffset, color, mColor, normal, mNormal;
             if (x1 >= this.display.width || x2 < 0) {
                 return;
             }
 
-            if (this.shading === 0 /* Flat */) {
-                color = shadingValues.flatColor;
-            }
+            invDeltaX = 1 / (x1 - x2);
+            mZ = (z1 - z2) * invDeltaX;
 
-            m = (z1 - z2) / (x1 - x2);
             x = Math.max(0, Math.round(x1)); // Note: Use round instead of ceil
-            z = z1 + m * (x - x1);
-            for (; x < Math.min(x2, this.display.width - 1); x += 1, z += m) {
-                this.renderPixel(x, y, Math.round(z), color);
-            }
-        };
+            roundXOffset = x - x1;
+            z = z1 + mZ * roundXOffset;
 
-        Renderer.prototype.shadeByNormal = function (normal) {
-            var color = this.ambientLight.clone();
-            this.directionalLights.forEach(function (l) {
-                var prod = normal.dot(l.direction);
-                if (prod < 0) {
-                    prod = -prod;
-                }
-                if (prod > 1) {
-                    prod = 1;
-                }
-                color.add(CS580GL.Color.multiplyScalar(l.color, prod));
-            });
-            return color.clamp();
-        };
-
-        Renderer.prototype.renderScreenTriangle = function (triangle) {
-            // Sort vertices
-            var vertices = triangle.toVertexArray().sort(function (l, r) {
-                return !CS580GL.floatEq(l.position.y, r.position.y) ? l.position.y - r.position.y : l.position.x - r.position.x;
-            });
-            var pos = vertices.map(function (v) {
-                return v.position;
-            });
-
-            // Set up shading
-            var shadingValues = {};
             switch (this.shading) {
                 case 0 /* Flat */:
-                    shadingValues.flatColor = this.shadeByNormal(triangle.a.normal);
+                    color = shadingParams.flatColor;
+                    break;
+                case 1 /* Gouraud */:
+                    mColor = CS580GL.Color.subtract(shadingParams.color1, shadingParams.color2).multiplyScalar(invDeltaX);
+                    color = shadingParams.color1.clone(); // avoid clamping
+                    break;
+                case 2 /* Phong */:
+                    mNormal = CS580GL.Vector3.subtract(shadingParams.normal1, shadingParams.normal2).multiplyScalar(invDeltaX);
+                    normal = CS580GL.Vector3.multiplyScalar(mNormal, roundXOffset).add(shadingParams.normal1);
+                    color = this.shadeByNormal(shadingParams.normal1); // avoid clamping
                     break;
                 default:
                     debugger;
             }
 
-            // Initialize interpolation
-            var deltaY = [pos[0].y - pos[1].y, pos[0].y - pos[2].y, pos[1].y - pos[2].y];
-
-            // Compute slopes dx/dy and dz/dy
-            var edgeSlopeXY = function (vi, vj) {
-                return (pos[vi].x - pos[vj].x) / (pos[vi].y - pos[vj].y);
-            };
-            var mx01 = edgeSlopeXY(0, 1), mx02 = edgeSlopeXY(0, 2), mx12 = edgeSlopeXY(1, 2);
-
-            var edgeSlopeZY = function (vi, vj) {
-                return (pos[vi].z - pos[vj].z) / (pos[vi].y - pos[vj].y);
-            };
-            var mz01 = edgeSlopeZY(0, 1), mz02 = edgeSlopeZY(0, 2), mz12 = edgeSlopeZY(1, 2);
-
-            // Initial scan line positions on each edge
-            var edgeInitialX = function (vi, mx) {
-                return pos[vi].x + mx * (Math.ceil(pos[vi].y) - pos[vi].y);
-            };
-            var edgeInitialZ = function (vi, mz) {
-                return pos[vi].z + mz * (Math.ceil(pos[vi].y) - pos[vi].y);
+            var advance = function () {
+                x += 1;
+                z += mZ;
+                if (_this.shading === 1 /* Gouraud */) {
+                    color.add(mColor);
+                } else if (_this.shading === 2 /* Phong */) {
+                    normal.add(mNormal);
+                    color = _this.shadeByNormal(normal);
+                }
             };
 
-            var x01 = edgeInitialX(0, mx01), x02 = edgeInitialX(0, mx02), x12 = edgeInitialX(1, mx12);
-            var z01 = edgeInitialZ(0, mz01), z02 = edgeInitialZ(0, mz02), z12 = edgeInitialZ(1, mz12);
+            for (; x < Math.min(x2, this.display.width - 1); advance()) {
+                color.clamp();
+                this.renderPixel(x, y, Math.round(z), color);
+            }
+        };
 
-            var y = Math.ceil(pos[0].y);
+        Renderer.computeReflectZ = function (n, l) {
+            return n.dot(l) * 2 * n.z - l.z;
+        };
 
-            var isMidVertexLeft = isFinite(mx01) && (mx01 < mx02);
+        Renderer.prototype.shadeByNormal = function (normal) {
+            var _this = this;
+            var n = normal.clone().normalize();
+
+            var diffuse = new CS580GL.Color(0, 0, 0), specular = new CS580GL.Color(0, 0, 0);
+
+            this.directionalLights.forEach(function (light) {
+                var l = light.direction.normalize();
+
+                var nDotL = normal.dot(l), reflectZ;
+                if (nDotL > 0 && normal.z > 0) {
+                    reflectZ = n.dot(light.direction);
+                } else if (nDotL < 0 && normal.z < 0) {
+                    n.negate();
+                    nDotL = -nDotL;
+                    reflectZ = Renderer.computeReflectZ(n, l);
+                } else {
+                    return;
+                }
+
+                diffuse.add(CS580GL.Color.multiplyScalar(light.color, CS580GL.clamp(nDotL, 0, 1)));
+                specular.add(CS580GL.Color.multiplyScalar(light.color, Math.pow(CS580GL.clamp(reflectZ, 0, 1), _this.shininess)));
+            });
+
+            return CS580GL.Color.multiplyScalar(this.ambientLight, this.ambientCoefficient).add(specular.multiplyScalar(this.specularCoefficient)).add(diffuse.multiplyScalar(this.diffuseCoefficient)).clamp();
+        };
+
+        Renderer.prototype.renderScreenTriangle = function (triangle) {
+            var _this = this;
+            // Sort vertices
+            var vertices = triangle.toVertexArray().sort(function (l, r) {
+                return !CS580GL.floatEq(l.position.y, r.position.y) ? l.position.y - r.position.y : l.position.x - r.position.x;
+            });
+            var pos = function (i) {
+                return vertices[i].position;
+            };
+            var vNormal = function (i) {
+                return vertices[i].normal;
+            };
+
+            // Set up interpolation for x and z
+            // Order 01, 02, 12. Same for mX, mZ, x.
+            var invDeltaY = [1 / (pos(0).y - pos(1).y), 1 / (pos(0).y - pos(2).y), 1 / (pos(1).y - pos(2).y)];
+
+            // Compute slopes mX = dx/dy and my = dz/dy
+            var mX = [
+                invDeltaY[0] * (pos(0).x - pos(1).x),
+                invDeltaY[1] * (pos(0).x - pos(2).x),
+                invDeltaY[2] * (pos(1).x - pos(2).x)
+            ];
+            var mZ = [
+                invDeltaY[0] * (pos(0).z - pos(1).z),
+                invDeltaY[1] * (pos(0).z - pos(2).z),
+                invDeltaY[2] * (pos(1).z - pos(2).z)
+            ];
+
+            var isMidVertexLeft = isFinite(mX[0]) && (mX[0] < mX[1]);
+
+            // Current scan line (x,z) positions on each edge
+            var roundYOffset = [
+                Math.ceil(pos(0).y) - pos(0).y,
+                Math.ceil(pos(1).y) - pos(1).y
+            ];
+            var x = [
+                pos(0).x + mX[0] * roundYOffset[0],
+                pos(0).x + mX[1] * roundYOffset[0],
+                pos(1).x + mX[2] * roundYOffset[1]
+            ];
+            var z = [
+                pos(0).z + mZ[0] * roundYOffset[0],
+                pos(0).z + mZ[1] * roundYOffset[0],
+                pos(1).z + mZ[2] * roundYOffset[1]
+            ];
+
+            var y = Math.ceil(pos(0).y);
+
+            // Set up shading
+            // The flat color for flat shading
+            var flatColor;
+
+            // For Gouraud shading:
+            // - vColors: colors on vertices
+            // - mColors: slopes d(color)/dy
+            // - color: color values on the intersection of current scan line and edges
+            var vColors, mColor, color;
+
+            // For Phong shading:
+            // - mNormals: slopes d(normal)/dy
+            // - normal: normal values on the intersection of current scan line and edges
+            var mNormal, normal;
+
+            switch (this.shading) {
+                case 0 /* Flat */:
+                    flatColor = this.shadeByNormal(triangle.a.normal);
+                    break;
+                case 1 /* Gouraud */:
+                    vColors = [
+                        this.shadeByNormal(vertices[0].normal),
+                        this.shadeByNormal(vertices[1].normal),
+                        this.shadeByNormal(vertices[2].normal)
+                    ];
+                    mColor = [
+                        CS580GL.Color.subtract(vColors[0], vColors[1]).multiplyScalar(invDeltaY[0]),
+                        CS580GL.Color.subtract(vColors[0], vColors[2]).multiplyScalar(invDeltaY[1]),
+                        CS580GL.Color.subtract(vColors[1], vColors[2]).multiplyScalar(invDeltaY[2])
+                    ];
+                    color = [
+                        CS580GL.Color.multiplyScalar(mColor[0], roundYOffset[0]).add(vColors[0]),
+                        CS580GL.Color.multiplyScalar(mColor[1], roundYOffset[0]).add(vColors[0]),
+                        CS580GL.Color.multiplyScalar(mColor[2], roundYOffset[1]).add(vColors[1])
+                    ];
+                    break;
+                case 2 /* Phong */:
+                    mNormal = [
+                        CS580GL.Vector3.subtract(vNormal(0), vNormal(1)).multiplyScalar(invDeltaY[0]),
+                        CS580GL.Vector3.subtract(vNormal(0), vNormal(2)).multiplyScalar(invDeltaY[1]),
+                        CS580GL.Vector3.subtract(vNormal(1), vNormal(2)).multiplyScalar(invDeltaY[2])
+                    ];
+                    normal = [
+                        CS580GL.Vector3.multiplyScalar(mNormal[0], roundYOffset[0]).add(vNormal(0)),
+                        CS580GL.Vector3.multiplyScalar(mNormal[1], roundYOffset[0]).add(vNormal(0)),
+                        CS580GL.Vector3.multiplyScalar(mNormal[2], roundYOffset[1]).add(vNormal(1))
+                    ];
+                    break;
+                default:
+                    debugger;
+            }
 
             // Helper function that advances the scan line
             var upperAdvance = function () {
                 y += 1;
-                x01 += mx01;
-                z01 += mz01;
-                x02 += mx02;
-                z02 += mz02;
+                x[0] += mX[0];
+                z[0] += mZ[0];
+                x[1] += mX[1];
+                z[1] += mZ[1];
+                if (_this.shading === 1 /* Gouraud */) {
+                    color[0].add(mColor[0]);
+                    color[1].add(mColor[1]);
+                } else if (_this.shading === 2 /* Phong */) {
+                    normal[0].add(mNormal[0]);
+                    normal[1].add(mNormal[1]);
+                }
             };
             var lowerAdvance = function () {
                 y += 1;
-                x12 += mx12;
-                z12 += mz12;
-                x02 += mx02;
-                z02 += mz02;
+                x[1] += mX[1];
+                z[1] += mZ[1];
+                x[2] += mX[2];
+                z[2] += mZ[2];
+                if (_this.shading == 1 /* Gouraud */) {
+                    color[1].add(mColor[1]);
+                    color[2].add(mColor[2]);
+                } else if (_this.shading === 2 /* Phong */) {
+                    normal[1].add(mNormal[1]);
+                    normal[2].add(mNormal[2]);
+                }
             };
 
+            var shadingParams;
+            if (this.shading === 0 /* Flat */) {
+                shadingParams = { flatColor: flatColor };
+            }
             if (isMidVertexLeft) {
-                for (; y < pos[1].y; upperAdvance()) {
-                    this.drawScanLine(x01, z01, x02, z02, y, shadingValues);
+                if (this.shading === 1 /* Gouraud */) {
+                    shadingParams = {
+                        color1: color[0],
+                        color2: color[1]
+                    };
+                } else if (this.shading === 2 /* Phong */) {
+                    shadingParams = {
+                        normal1: normal[0],
+                        normal2: normal[1]
+                    };
+                }
+                for (; y < pos(1).y; upperAdvance()) {
+                    this.drawScanLine(x[0], z[0], x[1], z[1], y, shadingParams);
                 }
 
-                for (; y <= pos[2].y; lowerAdvance()) {
-                    this.drawScanLine(x12, z12, x02, z02, y, shadingValues);
+                if (this.shading === 1 /* Gouraud */) {
+                    shadingParams = {
+                        color1: color[2],
+                        color2: color[1]
+                    };
+                } else if (this.shading === 2 /* Phong */) {
+                    shadingParams = {
+                        normal1: normal[2],
+                        normal2: normal[1]
+                    };
+                }
+                for (; y <= pos(2).y; lowerAdvance()) {
+                    this.drawScanLine(x[2], z[2], x[1], z[1], y, shadingParams);
                 }
             } else {
-                for (; y < pos[1].y; upperAdvance()) {
-                    this.drawScanLine(x02, z02, x01, z01, y, shadingValues);
+                if (this.shading === 1 /* Gouraud */) {
+                    shadingParams = {
+                        color1: color[1],
+                        color2: color[0]
+                    };
+                } else if (this.shading === 2 /* Phong */) {
+                    shadingParams = {
+                        normal1: normal[1],
+                        normal2: normal[0]
+                    };
+                }
+                for (; y < pos(1).y; upperAdvance()) {
+                    this.drawScanLine(x[1], z[1], x[0], z[0], y, shadingParams);
                 }
 
-                for (; y <= pos[2].y; lowerAdvance()) {
-                    this.drawScanLine(x02, z02, x12, z12, y, shadingValues);
+                if (this.shading === 1 /* Gouraud */) {
+                    shadingParams = {
+                        color1: color[1],
+                        color2: color[2]
+                    };
+                } else if (this.shading === 2 /* Phong */) {
+                    shadingParams = {
+                        normal1: normal[1],
+                        normal2: normal[2]
+                    };
+                }
+                for (; y <= pos(2).y; lowerAdvance()) {
+                    this.drawScanLine(x[1], z[1], x[2], z[2], y, shadingParams);
                 }
             }
 
@@ -960,7 +1186,7 @@ var CS580GL;
             // Note that normal is not transformed, because we don't transform lighting either
             return {
                 position: vertex.position.clone().applyAsHomogeneous(this.accumulatedTransformation),
-                normal: vertex.normal,
+                normal: vertex.normal.clone().transformDirection(this.accumulatedNormalTransformation),
                 textureCoordinate: vertex.textureCoordinate
             };
         };
@@ -1006,7 +1232,8 @@ var CS580GL;
         flush(display, true);
     }
 
-    // Helper function for Homework 2 & 3: parse triangle data string
+    // ---- Homework 2 ----
+    // Helper function for Homework 2 and beyond: parse triangle data string
     function parseTriangles(trianglesData, invertZ) {
         if (typeof invertZ === "undefined") { invertZ = true; }
         var result = [];
@@ -1035,15 +1262,20 @@ var CS580GL;
         return result;
     }
 
-    // ---- Homework 2 ----
     function renderHomework2(screenPotData, flush) {
         var display = new CS580GL.Display(256, 256).reset(defaultBackgroundPixel);
         var renderer = new CS580GL.Renderer(display);
         renderer.shading = 0 /* Flat */;
-        renderer.directionalLights.push({
-            direction: new CS580GL.Vector3(0.707, 0.5, 0.5),
-            color: new CS580GL.Color(0.95, 0.65, 0.88)
-        });
+        renderer.directionalLights = [
+            {
+                direction: new CS580GL.Vector3(-0.707, -0.5, -0.5),
+                color: new CS580GL.Color(0.95, 0.65, 0.88)
+            },
+            {
+                direction: new CS580GL.Vector3(0.707, 0.5, 0.5),
+                color: new CS580GL.Color(0.95, 0.65, 0.88)
+            }
+        ];
 
         var triangles = parseTriangles(screenPotData, false);
         for (var i = 0; i < triangles.length; i += 1) {
@@ -1054,23 +1286,59 @@ var CS580GL;
     }
 
     // ---- Homework 3 ----
-    function renderHomework3(potData, getParameters, flush) {
-        var display = new CS580GL.Display(256, 256);
-
-        var renderer = new CS580GL.Renderer(display);
-
-        renderer.shading = 0 /* Flat */;
-        renderer.directionalLights.push({
-            direction: new CS580GL.Vector3(0.707, 0.5, 0.5),
-            color: new CS580GL.Color(0.95, 0.65, 0.88)
-        });
-
-        renderer.camera = new CS580GL.Camera({
+    // Helper function for Homework 3 and beyond: create a default camera
+    function getDefaultCamera() {
+        return new CS580GL.Camera({
             position: new CS580GL.Vector3(13.2, -8.7, 14.8),
             lookAtTarget: new CS580GL.Vector3(0.8, 0.7, -4.5),
             up: new CS580GL.Vector3(-0.2, 1.0, 0),
             fov: 53.7 / 180 * Math.PI
         });
+    }
+
+    // Helper function for Homework 3 and beyond: apply transformations according to parameter settings
+    function applyTransformationParams(renderer, params) {
+        renderer.toWorldTransformationStack = [
+            CS580GL.Matrix4.makeTranslation(params.translate.x, params.translate.y, params.translate.z),
+            CS580GL.Matrix4.makeRotationZ(params.rotate.z),
+            CS580GL.Matrix4.makeRotationY(params.rotate.y),
+            CS580GL.Matrix4.makeRotationX(params.rotate.x),
+            CS580GL.Matrix4.makeScale(params.scale.x, params.scale.y, params.scale.z)
+        ];
+
+        renderer.normalTransformationStack = [
+            CS580GL.Matrix4.makeRotationZ(params.rotate.z),
+            CS580GL.Matrix4.makeRotationY(params.rotate.y),
+            CS580GL.Matrix4.makeRotationX(params.rotate.x)
+        ];
+
+        if (params.rotateCamera) {
+            if (params.rotateCameraY) {
+                renderer.camera.position.applyAsHomogeneous(CS580GL.Matrix4.makeRotationY(1 / 180 * Math.PI));
+            }
+            renderer.camera.updateLookAtMatrix();
+        }
+
+        renderer.updateAccumulatedTransformation();
+    }
+
+    function renderHomework3(potData, getParameters, flush) {
+        var display = new CS580GL.Display(256, 256);
+
+        var renderer = new CS580GL.Renderer(display);
+        renderer.camera = getDefaultCamera();
+
+        renderer.shading = 0 /* Flat */;
+        renderer.directionalLights = [
+            {
+                direction: new CS580GL.Vector3(0.707, 0.5, -0.5),
+                color: new CS580GL.Color(0.95, 0.65, 0.88)
+            },
+            {
+                direction: new CS580GL.Vector3(-0.707, -0.5, 0.5),
+                color: new CS580GL.Color(0.95, 0.65, 0.88)
+            }
+        ];
 
         var triangles = parseTriangles(potData);
 
@@ -1078,33 +1346,20 @@ var CS580GL;
             if (typeof toImageFile === "undefined") { toImageFile = false; }
             var parameters = getParameters();
 
-            if (!parameters.isCurrent) {
+            if (parameters.selection !== "hw3") {
                 return;
             }
 
             display.reset(defaultBackgroundPixel);
-            renderer.toWorldTransformationStack = [
-                CS580GL.Matrix4.makeTranslation(parameters.translate.x, parameters.translate.y, parameters.translate.z),
-                CS580GL.Matrix4.makeRotationZ(parameters.rotate.z),
-                CS580GL.Matrix4.makeRotationY(parameters.rotate.y),
-                CS580GL.Matrix4.makeRotationX(parameters.rotate.x),
-                CS580GL.Matrix4.makeScale(parameters.scale.x, parameters.scale.y, parameters.scale.z)
-            ];
-
-            renderer.updateAccumulatedTransformation();
+            applyTransformationParams(renderer, parameters);
 
             for (var i = 0; i < triangles.length; i += 1) {
-                var shadingNormal = triangles[i].a.normal.clone();
-                shadingNormal.setZ(-shadingNormal.z);
-
                 renderer.renderTriangle(triangles[i]);
             }
 
             flush(display, toImageFile);
 
             if (parameters.rotateCamera) {
-                renderer.camera.position.applyAsHomogeneous(CS580GL.Matrix4.makeRotationY(1 / 180 * Math.PI));
-                renderer.camera.updateLookAtMatrix();
                 requestAnimationFrame(function () {
                     return renderLoop();
                 });
@@ -1112,6 +1367,83 @@ var CS580GL;
                 setTimeout(function () {
                     return requestAnimationFrame(function () {
                         return renderLoop();
+                    });
+                }, 100);
+            }
+        };
+
+        renderLoop(true);
+    }
+
+    // ---- Homework 4 ----
+    function renderHomework4(potData, getParameters, flush) {
+        var display = new CS580GL.Display(256, 256);
+
+        var renderer = new CS580GL.Renderer(display);
+        renderer.camera = getDefaultCamera();
+
+        renderer.ambientCoefficient = 0.1;
+        renderer.diffuseCoefficient = 0.7;
+        renderer.specularCoefficient = 0.3;
+        renderer.shininess = 32;
+        renderer.ambientLight = new CS580GL.Color(0.3, 0.3, 0.3);
+        renderer.directionalLights = [
+            {
+                direction: new CS580GL.Vector3(-0.7071, 0.7071, 0),
+                color: new CS580GL.Color(0.5, 0.5, 0.9)
+            },
+            {
+                direction: new CS580GL.Vector3(0, -0.7071, 0.7071),
+                color: new CS580GL.Color(0.9, 0.2, 0.3)
+            },
+            {
+                direction: new CS580GL.Vector3(0.7071, 0.0, 0.7071),
+                color: new CS580GL.Color(0.2, 0.7, 0.3)
+            }
+        ];
+
+        var triangles = parseTriangles(potData);
+
+        var renderLoop = function (toImageFile) {
+            if (typeof toImageFile === "undefined") { toImageFile = false; }
+            var parameters = getParameters();
+
+            if (parameters.selection !== "hw4") {
+                return;
+            }
+
+            var oldShading = renderer.shading;
+            switch (parameters.shading) {
+                case "flat":
+                    renderer.shading = 0 /* Flat */;
+                    break;
+                case "gouraud":
+                    renderer.shading = 1 /* Gouraud */;
+                    break;
+                case "phong":
+                    renderer.shading = 2 /* Phong */;
+                    break;
+                default:
+                    debugger;
+            }
+
+            display.reset(defaultBackgroundPixel);
+            applyTransformationParams(renderer, parameters);
+
+            for (var i = 0; i < triangles.length; i += 1) {
+                renderer.renderTriangle(triangles[i]);
+            }
+
+            flush(display, toImageFile);
+
+            if (parameters.rotateCamera) {
+                requestAnimationFrame(function () {
+                    return renderLoop(oldShading !== renderer.shading);
+                });
+            } else {
+                setTimeout(function () {
+                    return requestAnimationFrame(function () {
+                        return renderLoop(oldShading !== renderer.shading);
                     });
                 }, 100);
             }
@@ -1137,7 +1469,7 @@ var CS580GL;
         var downloadAnchorElem = document.getElementById("download");
         var selectElem = document.getElementById("select");
 
-        var hw3ControlsElem = document.getElementById("hw3-controls");
+        var transformControlsElem = document.getElementById("transform-controls");
         var rotateCameraElem = document.getElementById("camera-rotation");
         var translateXElem = document.getElementById("translate-x");
         var translateYElem = document.getElementById("translate-y");
@@ -1149,9 +1481,12 @@ var CS580GL;
         var scaleYElem = document.getElementById("scale-y");
         var scaleZElem = document.getElementById("scale-z");
 
+        var shadingControlsElem = document.getElementById("shading-controls");
+        var shadingElem = document.getElementById("shading");
+
         // Utility function for getting parameters from input elements
         var getParameters = function () {
-            return {
+            var params = {
                 translate: {
                     x: parseFloat(translateXElem.value),
                     y: parseFloat(translateYElem.value),
@@ -1167,9 +1502,12 @@ var CS580GL;
                     y: parseFloat(scaleYElem.value),
                     z: parseFloat(scaleZElem.value)
                 },
-                isCurrent: selectElem.value == "hw3",
-                rotateCamera: rotateCameraElem.checked
+                selection: selectElem.value,
+                rotateCameraY: rotateCameraElem.checked,
+                shading: shadingElem.value
             };
+            params.rotateCamera = params.rotateCameraY;
+            return params;
         };
 
         // Utility function for flushing the Display into both the Canvas and a PPM file
@@ -1191,7 +1529,17 @@ var CS580GL;
             URL.revokeObjectURL(downloadAnchorElem.href);
             downloadAnchorElem.href = "#";
 
-            hw3ControlsElem.style.visibility = selectElem.value == "hw3" ? "visible" : "collapse";
+            if (selectElem.value === "hw1" || selectElem.value === "hw2") {
+                transformControlsElem.style.visibility = "collapse";
+            } else {
+                transformControlsElem.style.visibility = "visible";
+            }
+
+            if (selectElem.value === "hw4") {
+                shadingControlsElem.style.visibility = "visible";
+            } else {
+                shadingControlsElem.style.visibility = "collapse";
+            }
 
             switch (selectElem.value) {
                 case "hw1":
@@ -1212,6 +1560,13 @@ var CS580GL;
                     canvasElem.height = canvasElem.width = 256;
                     loadTextFileAsync("data/pot4.asc", function (text) {
                         renderHomework3(text, getParameters, flush);
+                    });
+                    break;
+
+                case "hw4":
+                    canvasElem.height = canvasElem.width = 256;
+                    loadTextFileAsync("data/pot4.asc", function (text) {
+                        renderHomework4(text, getParameters, flush);
                     });
                     break;
 

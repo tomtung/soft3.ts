@@ -77,11 +77,29 @@ module CS580GL {
             return v1.clone().cross(v2);
         }
 
+        multiplyScalar(scalar: number): Vector3 {
+            this.x *= scalar;
+            this.y *= scalar;
+            this.z *= scalar;
+            return this;
+        }
+
+        static multiplyScalar(vec: Vector3, scalar: number): Vector3 {
+            return vec.clone().multiplyScalar(scalar);
+        }
+
         divideScalar(scalar: number): Vector3 {
-            var scalarInv = 1 / scalar;
-            this.x *= scalarInv;
-            this.y *= scalarInv;
-            this.z *= scalarInv;
+            return this.multiplyScalar(1 / scalar);
+        }
+
+        static divideScalar(vec: Vector3, scalar: number): Vector3 {
+            return Vector3.multiplyScalar(vec, 1 / scalar);
+        }
+
+        negate(): Vector3 {
+            this.x = -this.x;
+            this.y = -this.y;
+            this.z = -this.z;
             return this;
         }
 
@@ -97,6 +115,19 @@ module CS580GL {
                     wInv * (e[4] * this.x + e[5] * this.y + e[6] * this.z + e[7]),
                     wInv * (e[8] * this.x + e[9] * this.y + e[10] * this.z + e[11])
             );
+        }
+
+        /**
+         * Transforms the direction of this vector by the 3 x 3 subset of the matrix, and then normalizes the result.
+         * @param matrix
+         */
+        transformDirection(matrix: Matrix4): Vector3 {
+            var e = matrix.elements;
+            return this.setXYZ(
+                    e[0] * this.x + e[1] * this.y + e[2] * this.z,
+                    e[4] * this.x + e[5] * this.y + e[6] * this.z,
+                    e[8] * this.x + e[9] * this.y + e[10] * this.z
+            ).normalize();
         }
 
         lengthSq(): number {

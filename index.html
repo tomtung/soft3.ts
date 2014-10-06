@@ -1,99 +1,113 @@
 ﻿<!DOCTYPE html>
 
 <html lang="en">
-    <title>CSCI580 Homework by Yubing Dong</title>
+<title>CSCI580 Homework by Yubing Dong</title>
 
-    <head>
-        <meta charset="utf-8" />
-        <link rel="stylesheet" href="app.css" type="text/css" />
-        <script src="js/app.js"></script>
-    </head>
+<head>
+    <meta charset="utf-8"/>
+    <link rel="stylesheet" href="app.css" type="text/css"/>
+    <script src="js/app.js"></script>
+</head>
 
-    <body>
-        <div id="root-container" style="position: relative">
-            <h1><a href="http://www-bcf.usc.edu/~saty/edu/courses/CS580/f14/">CSCI 580 - 3D Graphics and Rendering</a></h1>
-            <select id="select">
-                <option value="hw1">Homework 1 - Warmup</option>
-                <option value="hw2" >Homework 2 - Rasterization</option>
-                <option value="hw3" selected="selected">Homework 3 - Transformations</option>
-            </select>
-            <hr/>
-            <div style="position: relative">
-                <canvas id="canvas"></canvas>
+<body>
+<div id="root-container" style="position: relative">
+    <h1><a href="http://www-bcf.usc.edu/~saty/edu/courses/CS580/f14/">CSCI 580 - 3D Graphics and Rendering</a></h1>
+    <select id="select">
+        <option value="hw1">Homework 1 - Warmup</option>
+        <option value="hw2">Homework 2 - Rasterization</option>
+        <option value="hw3">Homework 3 - Transformations</option>
+        <option value="hw4" selected="selected">Homework 4 - Shading</option>
+    </select>
+    <hr/>
+    <div style="position: relative">
+        <canvas id="canvas"></canvas>
+        <div>
+            <a id="download" href="#">Save as PPM Image File</a>
+        </div>
+        <div style="margin: 1em; z-index: 10; position: absolute; right: 0; top: 0">
+            <div id="transform-controls" style="margin: 1em">
+                <!-- Translate -->
                 <div>
-                    <a id="download" href="#">Save as PPM Image File</a>
+                    <label for="translate-x">Translate X: </label>
+                    <output for="translate-x" id="translate-x-output"></output>
                 </div>
-                <div id="hw3-controls" style="margin: 1em; z-index: 10; position: absolute; right: 0; top: 0">
-                    <!-- Translate -->
+                <input id="translate-x" type="range" value="0" min="-10" max="10" step="0.01"/>
+
+                <div>
                     <div>
-                        <label for="translate-x">Translate X: </label>
-                        <output for="translate-x" id="translate-x-output" ></output>
+                        <label for="translate-y">Translate Y: </label>
+                        <output for="translate-y" id="translate-y-output"></output>
                     </div>
-                    <input id="translate-x" type="range" value="0" min="-10" max="10" step="0.01" />
+                    <input id="translate-y" type="range" value="-3.25" min="-10" max="10" step="0.01"/>
+                </div>
+                <div>
                     <div>
-                        <div>
-                            <label for="translate-y">Translate Y: </label>
-                            <output for="translate-y" id="translate-y-output" ></output>
-                        </div>
-                        <input id="translate-y" type="range" value="-3.25" min="-10" max="10" step="0.01" />
+                        <label for="translate-z">Translate Z: </label>
+                        <output for="translate-z" id="translate-z-output"></output>
                     </div>
+                    <input id="translate-z" type="range" value="-3.5" min="-10" max="10" step="0.01"/>
+                </div>
+
+                <!-- Rotate -->
+                <div>
+                    <label for="rotate-x">Rotate X: </label>
+                    <output for="rotate-x" id="rotate-x-output"></output>
+                </div>
+                <input id="rotate-x" type="range" value="45" min="-180" max="180" step="0.1"/>
+
+                <div>
                     <div>
-                        <div>
-                            <label for="translate-z">Translate Z: </label>
-                            <output for="translate-z" id="translate-z-output" ></output>
-                        </div>
-                        <input id="translate-z" type="range" value="-3.5" min="-10" max="10" step="0.01" />
+                        <label for="rotate-y">Rotate Y: </label>
+                        <output for="rotate-y" id="rotate-y-output"></output>
                     </div>
-                
-                    <!-- Rotate -->
+                    <input id="rotate-y" type="range" value="30" min="-180" max="180" step="0.1"/>
+                </div>
+                <div>
                     <div>
-                        <label for="rotate-x">Rotate X: </label>
-                        <output for="rotate-x" id="rotate-x-output" ></output>
+                        <label for="rotate-z">Rotate Z: </label>
+                        <output for="rotate-z" id="rotate-z-output"></output>
                     </div>
-                    <input id="rotate-x" type="range" value="45" min="-180" max="180" step="0.1" />
+                    <input id="rotate-z" type="range" value="0" min="-180" max="180" step="0.1"/>
+                </div>
+
+                <!-- Scale -->
+                <div>
+                    <label for="scale-x">Scale X: </label>
+                    <output for="scale-x" id="scale-x-output"></output>
+                </div>
+                <input id="scale-x" type="range" value="3.25" min="0.1" max="5" step="0.01"/>
+
+                <div>
                     <div>
-                        <div>
-                            <label for="rotate-y">Rotate Y: </label>
-                            <output for="rotate-y" id="rotate-y-output" ></output>
-                        </div>
-                        <input id="rotate-y" type="range" value="30" min="-180" max="180" step="0.1" />
+                        <label for="scale-y">Scale Y: </label>
+                        <output for="scale-y" id="scale-y-output"></output>
                     </div>
+                    <input id="scale-y" type="range" value="3.25" min="0.1" max="5" step="0.01"/>
+                </div>
+                <div>
                     <div>
-                        <div>
-                            <label for="rotate-z">Rotate Z: </label>
-                            <output for="rotate-z" id="rotate-z-output" ></output>
-                        </div>
-                        <input id="rotate-z" type="range" value="0" min="-180" max="180" step="0.1" />
+                        <label for="scale-z">Scale Z: </label>
+                        <output for="scale-z" id="scale-z-output"></output>
                     </div>
-                
-                    <!-- Scale -->
-                    <div>
-                        <label for="scale-x">Scale X: </label>
-                        <output for="scale-x" id="scale-x-output" ></output>
-                    </div>
-                    <input id="scale-x" type="range" value="3.25" min="0.1" max="5" step="0.01" />
-                    <div>
-                        <div>
-                            <label for="scale-y">Scale Y: </label>
-                            <output for="scale-y" id="scale-y-output" ></output>
-                        </div>
-                        <input id="scale-y" type="range" value="3.25" min="0.1" max="5" step="0.01" />
-                    </div>
-                    <div>
-                        <div>
-                            <label for="scale-z">Scale Z: </label>
-                            <output for="scale-z" id="scale-z-output" ></output>
-                        </div>
-                        <input id="scale-z" type="range" value="3.25" min="0.1" max="5" step="0.01" />
-                    </div>
+                    <input id="scale-z" type="range" value="3.25" min="0.1" max="5" step="0.01"/>
+                </div>
 
 
-                    <div>
-                        <input id="camera-rotation" type="checkbox" />
-                        <label for="camera-rotation">Rotate camera around Y-axis</label>
-                    </div>
+                <div>
+                    <input id="camera-rotation" type="checkbox"/>
+                    <label for="camera-rotation">Rotate camera around Y-axis</label>
                 </div>
             </div>
+            <div id="shading-controls" style="margin: 1em">
+                <label for="shading">Shading</label>
+                <select id="shading">
+                    <option value="flat">Flat</option>
+                    <option value="gouraud">Gouraud</option>
+                    <option value="phong">Phong</option>
+                </select>
+            </div>
         </div>
-    </body>
+    </div>
+</div>
+</body>
 </html>

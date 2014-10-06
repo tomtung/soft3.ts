@@ -31,6 +31,8 @@ declare module CS580GL {
         public setBlue(value: number): Color;
         public blueUint8 : number;
         public setBlueUint8(value: number): Color;
+        public multiply(other: Color): Color;
+        static multiply(c1: Color, c2: Color): Color;
         public multiplyScalar(scalar: number): Color;
         static multiplyScalar(color: Color, scalar: number): Color;
         public getHex(): number;
@@ -39,6 +41,8 @@ declare module CS580GL {
         static clamp(color: Color): Color;
         public add(other: Color): Color;
         static add(c1: Color, c2: Color): Color;
+        public subtract(other: Color): Color;
+        static subtract(c1: Color, c2: Color): Color;
     }
 }
 declare module CS580GL {
@@ -160,12 +164,21 @@ declare module CS580GL {
         static subtract(v1: Vector3, v2: Vector3): Vector3;
         public cross(other: Vector3): Vector3;
         static cross(v1: Vector3, v2: Vector3): Vector3;
+        public multiplyScalar(scalar: number): Vector3;
+        static multiplyScalar(vec: Vector3, scalar: number): Vector3;
         public divideScalar(scalar: number): Vector3;
+        static divideScalar(vec: Vector3, scalar: number): Vector3;
+        public negate(): Vector3;
         /**
         * Convert this vector to homogeneous coordinates (by appending a forth dimension with value 1),
         * apply the matrix, and convert back to non-homogeneous coordinates
         */
         public applyAsHomogeneous(matrix: Matrix4): Vector3;
+        /**
+        * Transforms the direction of this vector by the 3 x 3 subset of the matrix, and then normalizes the result.
+        * @param matrix
+        */
+        public transformDirection(matrix: Matrix4): Vector3;
         public lengthSq(): number;
         public length(): number;
         public normalize(): Vector3;
@@ -241,27 +254,40 @@ declare module CS580GL {
     }
     enum ShadingMode {
         Flat = 0,
+        Gouraud = 1,
+        Phong = 2,
     }
-    interface IShadingValues {
+    interface IShadingParams {
         flatColor?: Color;
+        color1?: Color;
+        color2?: Color;
+        normal1?: Vector3;
+        normal2?: Vector3;
     }
     /** Render objects constructor */
     class Renderer {
         public display: Display;
         public camera: Camera;
         public toWorldTransformationStack: Matrix4[];
+        public normalTransformationStack: Matrix4[];
         public toScreenTransformation: Matrix4;
         public accumulatedTransformation: Matrix4;
+        public accumulatedNormalTransformation: Matrix4;
         public shading: ShadingMode;
         public ambientLight: Color;
+        public ambientCoefficient: number;
         public directionalLights: IDirectionalLight[];
+        public diffuseCoefficient: number;
+        public specularCoefficient: number;
+        public shininess: number;
         constructor(display: Display);
         /** Update the to-screen transformation matrix. Must be invoked if  display is changed. */
         public updateToScreenTransformation(): Renderer;
         /** Update the perspective matrix. Must be invoked if camera, display, or to-world transformations are changed. */
         public updateAccumulatedTransformation(): Renderer;
         public renderPixel(x: number, y: number, z: number, color: Color): Renderer;
-        public drawScanLine(x1: number, z1: number, x2: number, z2: number, y: number, shadingValues: IShadingValues): void;
+        public drawScanLine(x1: number, z1: number, x2: number, z2: number, y: number, shadingParams: IShadingParams): void;
+        private static computeReflectZ(n, l);
         private shadeByNormal(normal);
         public renderScreenTriangle(triangle: MeshTriangle): Renderer;
         private getTransformedVertex(vertex);

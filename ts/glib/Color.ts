@@ -95,6 +95,17 @@ module CS580GL {
             return this;
         }
 
+        multiply(other: Color): Color {
+            this.red *= other.red;
+            this.green *= other.green;
+            this.blue *= other.blue;
+            return this;
+        }
+
+        static multiply(c1: Color, c2: Color): Color {
+            return c1.clone().multiply(c2);
+        }
+
         multiplyScalar(scalar: number): Color {
             this.red = this.red * scalar;
             this.green = this.green * scalar;
@@ -116,6 +127,9 @@ module CS580GL {
         }
 
         clamp(): Color {
+            if (this.red > 1 && this.green > 1 && this.blue > 1) {
+                debugger;
+            }
             this.red = clamp(this.red, 0, 1);
             this.green = clamp(this.green, 0, 1);
             this.blue = clamp(this.blue, 0, 1);
@@ -135,6 +149,17 @@ module CS580GL {
 
         static add(c1: Color, c2: Color): Color {
             return c1.clone().add(c2);
+        }
+
+        subtract(other: Color): Color {
+            this.red -= other.red;
+            this.green -= other.green;
+            this.blue -= other.blue;
+            return this;
+        }
+
+        static subtract(c1: Color, c2: Color): Color {
+            return c1.clone().subtract(c2);
         }
     }
 }

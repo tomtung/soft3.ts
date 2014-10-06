@@ -11,22 +11,37 @@ module CS580GL {
     }
 
     export enum ShadingMode {
-        Flat
+        Flat,
+        Gouraud,
+        Phong
     }
 
-    export interface IShadingValues {
+    export interface IShadingParams {
+        // for flat shading
         flatColor?: Color
+        // for Gouraud shading
+        color1?: Color
+        color2?: Color
+        // for Phong shading
+        normal1?: Vector3
+        normal2?: Vector3
     }
 
     /** Render objects constructor */
     export class Renderer {
         camera: Camera;
         toWorldTransformationStack: Matrix4[] = [];
+        normalTransformationStack: Matrix4[] = [];
         toScreenTransformation: Matrix4;
         accumulatedTransformation: Matrix4 = Matrix4.identity();
+        accumulatedNormalTransformation: Matrix4 = Matrix4.identity();
         shading: ShadingMode = ShadingMode.Flat;
         ambientLight: Color = new Color(0.0, 0.0, 0.0);
+        ambientCoefficient: number = 1.0;
         directionalLights: IDirectionalLight[] = [];
+        diffuseCoefficient: number = 1.0;
+        specularCoefficient: number = 0.0;
+        shininess: number = 0.0;
 
         constructor(public display: Display) {
             this.updateToScreenTransformation();
@@ -57,6 +72,11 @@ module CS580GL {
                 this.toWorldTransformationStack.forEach(m => {
                     this.accumulatedTransformation.multiply(m);
                 });
+
+                this.accumulatedNormalTransformation.copyFrom(this.camera.lookAtMatrix);
+                this.normalTransformationStack.forEach(m => {
+                    this.accumulatedNormalTransformation.multiply(m);
+                });
             }
 
             return this;
@@ -73,39 +93,88 @@ module CS580GL {
             return this;
         }
 
-        drawScanLine(x1: number, z1: number, x2: number, z2: number, y: number, shadingValues: IShadingValues) {
-            var m: number, x: number, z: number, color: Color;
+        drawScanLine(x1: number, z1: number, x2: number, z2: number, y: number, shadingParams: IShadingParams) {
+            var mZ: number, x: number, z: number, invDeltaX: number, roundXOffset: number, color: Color, mColor: Color, normal: Vector3, mNormal: Vector3;
             if (x1 >= this.display.width || x2 < 0) {
                 return;
             }
 
-            if (this.shading === ShadingMode.Flat) {
-                color = shadingValues.flatColor;
+            invDeltaX = 1 / (x1 - x2);
+            mZ = (z1 - z2) * invDeltaX;
+
+            x = Math.max(0, Math.round(x1)); // Note: Use round instead of ceil
+            roundXOffset = x - x1;
+            z = z1 + mZ * roundXOffset;
+
+            switch (this.shading) {
+                case ShadingMode.Flat:
+                    color = shadingParams.flatColor;
+                    break;
+                case ShadingMode.Gouraud:
+                    mColor = Color.subtract(shadingParams.color1, shadingParams.color2).multiplyScalar(invDeltaX);
+                    color = shadingParams.color1.clone(); // avoid clamping
+                    break;
+                case ShadingMode.Phong:
+                    mNormal = Vector3.subtract(shadingParams.normal1, shadingParams.normal2).multiplyScalar(invDeltaX);
+                    normal = Vector3.multiplyScalar(mNormal, roundXOffset).add(shadingParams.normal1);
+                    color = this.shadeByNormal(shadingParams.normal1); // avoid clamping
+                    break;
+                default:
+                    debugger;
             }
 
-            m = (z1 - z2) / (x1 - x2);
-            x = Math.max(0, Math.round(x1)); // Note: Use round instead of ceil
-            z = z1 + m * (x - x1);
-            for (; x < Math.min(x2, this.display.width - 1); x += 1, z += m) {
+            var advance = () => {
+                x += 1;
+                z += mZ;
+                if (this.shading === ShadingMode.Gouraud) {
+                    color.add(mColor);
+                } else if (this.shading === ShadingMode.Phong) {
+                    normal.add(mNormal);
+                    color = this.shadeByNormal(normal);
+                }
+            };
+
+            for (; x < Math.min(x2, this.display.width - 1); advance()) {
+                color.clamp();
                 this.renderPixel(x, y, Math.round(z), color);
             }
         }
 
+        private static computeReflectZ(n: Vector3, l: Vector3): number {
+            return n.dot(l)*2*n.z - l.z;
+        }
+
         private shadeByNormal(normal: Vector3): Color {
-            var color = this.ambientLight.clone();
-            this.directionalLights.forEach(l => {
-                var prod = normal.dot(l.direction);
-                if (prod < 0) {
-                    prod = -prod;
+            var n = normal.clone().normalize();
+
+            var diffuse = new Color(0, 0, 0), specular = new Color(0, 0, 0);
+
+            this.directionalLights.forEach(light => {
+                var l = light.direction.normalize();
+
+                var nDotL = normal.dot(l), reflectZ: number;
+                if (nDotL > 0 && normal.z > 0) {
+                    reflectZ = n.dot(light.direction)
+                } else if (nDotL < 0 && normal.z < 0) {
+                    n.negate();
+                    nDotL = -nDotL;
+                    reflectZ = Renderer.computeReflectZ(n, l);
+                } else {
+                    return;
                 }
-                if (prod > 1) {
-                    prod = 1;
-                }
-                color.add(
-                    Color.multiplyScalar(l.color, prod)
+
+                diffuse.add(
+                    Color.multiplyScalar(light.color, clamp(nDotL, 0, 1))
+                );
+                specular.add(
+                    Color.multiplyScalar(light.color, Math.pow(clamp(reflectZ, 0, 1), this.shininess))
                 );
             });
-            return color.clamp();
+
+            return Color.multiplyScalar(this.ambientLight, this.ambientCoefficient).
+                    add(specular.multiplyScalar(this.specularCoefficient)).
+                    add(diffuse.multiplyScalar(this.diffuseCoefficient)).
+                    clamp();
         }
 
         renderScreenTriangle(triangle: MeshTriangle): Renderer {
@@ -115,79 +184,192 @@ module CS580GL {
                         l.position.y - r.position.y :
                         l.position.x - r.position.x
             );
-            var pos = vertices.map(v => v.position);
+            var pos = (i: number) => vertices[i].position;
+            var vNormal = (i: number) => vertices[i].normal;
+
+            // Set up interpolation for x and z
+
+            // Order 01, 02, 12. Same for mX, mZ, x.
+            var invDeltaY = [1 / (pos(0).y - pos(1).y), 1 / (pos(0).y - pos(2).y), 1 / (pos(1).y - pos(2).y)];
+
+            // Compute slopes mX = dx/dy and my = dz/dy
+            var mX = [
+                    invDeltaY[0] * (pos(0).x - pos(1).x),
+                    invDeltaY[1] * (pos(0).x - pos(2).x),
+                    invDeltaY[2] * (pos(1).x - pos(2).x)
+            ];
+            var mZ = [
+                    invDeltaY[0] * (pos(0).z - pos(1).z),
+                    invDeltaY[1] * (pos(0).z - pos(2).z),
+                    invDeltaY[2] * (pos(1).z - pos(2).z)
+            ];
+
+            var isMidVertexLeft = isFinite(mX[0]) && (mX[0] < mX[1]);
+
+            // Current scan line (x,z) positions on each edge
+            var roundYOffset = [
+                    Math.ceil(pos(0).y) - pos(0).y,
+                    Math.ceil(pos(1).y) - pos(1).y
+            ];
+            var x = [
+                    pos(0).x + mX[0] * roundYOffset[0],
+                    pos(0).x + mX[1] * roundYOffset[0],
+                    pos(1).x + mX[2] * roundYOffset[1]
+            ];
+            var z = [
+                    pos(0).z + mZ[0] * roundYOffset[0],
+                    pos(0).z + mZ[1] * roundYOffset[0],
+                    pos(1).z + mZ[2] * roundYOffset[1]
+            ];
+
+            var y = Math.ceil(pos(0).y);
 
             // Set up shading
-            var shadingValues: any = {};
-            switch(this.shading) {
+
+            // The flat color for flat shading
+            var flatColor: Color;
+
+            // For Gouraud shading:
+            // - vColors: colors on vertices
+            // - mColors: slopes d(color)/dy
+            // - color: color values on the intersection of current scan line and edges
+            var vColors: Color[], mColor: Color[], color: Color[];
+
+            // For Phong shading:
+            // - mNormals: slopes d(normal)/dy
+            // - normal: normal values on the intersection of current scan line and edges
+            var mNormal: Vector3[], normal: Vector3[];
+
+            switch (this.shading) {
                 case ShadingMode.Flat:
-                    shadingValues.flatColor = this.shadeByNormal(triangle.a.normal);
+                    flatColor = this.shadeByNormal(triangle.a.normal);
+                    break;
+                case ShadingMode.Gouraud:
+                    vColors = [
+                        this.shadeByNormal(vertices[0].normal),
+                        this.shadeByNormal(vertices[1].normal),
+                        this.shadeByNormal(vertices[2].normal)
+                    ];
+                    mColor = [
+                        Color.subtract(vColors[0], vColors[1]).multiplyScalar(invDeltaY[0]),
+                        Color.subtract(vColors[0], vColors[2]).multiplyScalar(invDeltaY[1]),
+                        Color.subtract(vColors[1], vColors[2]).multiplyScalar(invDeltaY[2])
+                    ];
+                    color = [
+                        Color.multiplyScalar(mColor[0], roundYOffset[0]).add(vColors[0]),
+                        Color.multiplyScalar(mColor[1], roundYOffset[0]).add(vColors[0]),
+                        Color.multiplyScalar(mColor[2], roundYOffset[1]).add(vColors[1])
+                    ];
+                    break;
+                case ShadingMode.Phong:
+                    mNormal = [
+                        Vector3.subtract(vNormal(0), vNormal(1)).multiplyScalar(invDeltaY[0]),
+                        Vector3.subtract(vNormal(0), vNormal(2)).multiplyScalar(invDeltaY[1]),
+                        Vector3.subtract(vNormal(1), vNormal(2)).multiplyScalar(invDeltaY[2])
+                    ];
+                    normal = [
+                        Vector3.multiplyScalar(mNormal[0], roundYOffset[0]).add(vNormal(0)),
+                        Vector3.multiplyScalar(mNormal[1], roundYOffset[0]).add(vNormal(0)),
+                        Vector3.multiplyScalar(mNormal[2], roundYOffset[1]).add(vNormal(1))
+                    ];
                     break;
                 default:
                     debugger;
             }
 
-            // Initialize interpolation
-            var deltaY = [pos[0].y - pos[1].y, pos[0].y - pos[2].y, pos[1].y - pos[2].y];
-
-            // Compute slopes dx/dy and dz/dy
-            var edgeSlopeXY = (vi: number, vj: number) => (pos[vi].x - pos[vj].x) / (pos[vi].y - pos[vj].y);
-            var mx01 = edgeSlopeXY(0, 1),
-                mx02 = edgeSlopeXY(0, 2),
-                mx12 = edgeSlopeXY(1, 2);
-
-            var edgeSlopeZY = (vi: number, vj: number) => (pos[vi].z - pos[vj].z) / (pos[vi].y - pos[vj].y);
-            var mz01 = edgeSlopeZY(0, 1),
-                mz02 = edgeSlopeZY(0, 2),
-                mz12 = edgeSlopeZY(1, 2);
-
-            // Initial scan line positions on each edge            
-
-            var edgeInitialX = (vi: number, mx: number) => pos[vi].x + mx * (Math.ceil(pos[vi].y) - pos[vi].y);
-            var edgeInitialZ = (vi: number, mz: number) => pos[vi].z + mz * (Math.ceil(pos[vi].y) - pos[vi].y);
-
-            var x01 = edgeInitialX(0, mx01),
-                x02 = edgeInitialX(0, mx02),
-                x12 = edgeInitialX(1, mx12);
-            var z01 = edgeInitialZ(0, mz01),
-                z02 = edgeInitialZ(0, mz02),
-                z12 = edgeInitialZ(1, mz12);
-
-            var y = Math.ceil(pos[0].y);
-
-            var isMidVertexLeft = isFinite(mx01) && (mx01 < mx02);
-
             // Helper function that advances the scan line
             var upperAdvance = (): void => {
                 y += 1;
-                x01 += mx01;
-                z01 += mz01;
-                x02 += mx02;
-                z02 += mz02;
+                x[0] += mX[0];
+                z[0] += mZ[0];
+                x[1] += mX[1];
+                z[1] += mZ[1];
+                if (this.shading === ShadingMode.Gouraud) {
+                    color[0].add(mColor[0]);
+                    color[1].add(mColor[1]);
+                } else if (this.shading === ShadingMode.Phong) {
+                    normal[0].add(mNormal[0]);
+                    normal[1].add(mNormal[1]);
+                }
             };
             var lowerAdvance = (): void => {
                 y += 1;
-                x12 += mx12;
-                z12 += mz12;
-                x02 += mx02;
-                z02 += mz02;
+                x[1] += mX[1];
+                z[1] += mZ[1];
+                x[2] += mX[2];
+                z[2] += mZ[2];
+                if (this.shading == ShadingMode.Gouraud) {
+                    color[1].add(mColor[1]);
+                    color[2].add(mColor[2]);
+                } else if (this.shading === ShadingMode.Phong) {
+                    normal[1].add(mNormal[1]);
+                    normal[2].add(mNormal[2]);
+                }
             };
 
+            var shadingParams: IShadingParams;
+            if (this.shading === ShadingMode.Flat) {
+                shadingParams = {flatColor: flatColor};
+            }
             if (isMidVertexLeft) {
-                for (; y < pos[1].y; upperAdvance()) {
-                    this.drawScanLine(x01, z01, x02, z02, y, shadingValues);
+                if (this.shading === ShadingMode.Gouraud) {
+                    shadingParams = {
+                        color1: color[0],
+                        color2: color[1]
+                    }
+                } else if (this.shading === ShadingMode.Phong) {
+                    shadingParams = {
+                        normal1: normal[0],
+                        normal2: normal[1]
+                    }
+                }
+                for (; y < pos(1).y; upperAdvance()) {
+                    this.drawScanLine(x[0], z[0], x[1], z[1], y, shadingParams);
                 }
 
-                for (; y <= pos[2].y; lowerAdvance()) {
-                    this.drawScanLine(x12, z12, x02, z02, y, shadingValues);
+                if (this.shading === ShadingMode.Gouraud) {
+                    shadingParams = {
+                        color1: color[2],
+                        color2: color[1]
+                    }
+                } else if (this.shading === ShadingMode.Phong) {
+                    shadingParams = {
+                        normal1: normal[2],
+                        normal2: normal[1]
+                    }
+                }
+                for (; y <= pos(2).y; lowerAdvance()) {
+                    this.drawScanLine(x[2], z[2], x[1], z[1], y, shadingParams);
                 }
             } else {
-                for (; y < pos[1].y; upperAdvance()) {
-                    this.drawScanLine(x02, z02, x01, z01, y, shadingValues);
+                if (this.shading === ShadingMode.Gouraud) {
+                    shadingParams = {
+                        color1: color[1],
+                        color2: color[0]
+                    }
+                } else if (this.shading === ShadingMode.Phong) {
+                    shadingParams = {
+                        normal1: normal[1],
+                        normal2: normal[0]
+                    }
+                }
+                for (; y < pos(1).y; upperAdvance()) {
+                    this.drawScanLine(x[1], z[1], x[0], z[0], y, shadingParams);
                 }
 
-                for (; y <= pos[2].y; lowerAdvance()) {
-                    this.drawScanLine(x02, z02, x12, z12, y, shadingValues);
+                if (this.shading === ShadingMode.Gouraud) {
+                    shadingParams = {
+                        color1: color[1],
+                        color2: color[2]
+                    }
+                } else if (this.shading === ShadingMode.Phong) {
+                    shadingParams = {
+                        normal1: normal[1],
+                        normal2: normal[2]
+                    }
+                }
+                for (; y <= pos(2).y; lowerAdvance()) {
+                    this.drawScanLine(x[1], z[1], x[2], z[2], y, shadingParams);
                 }
             }
 
@@ -198,7 +380,7 @@ module CS580GL {
             // Note that normal is not transformed, because we don't transform lighting either
             return {
                 position: vertex.position.clone().applyAsHomogeneous(this.accumulatedTransformation),
-                normal: vertex.normal,
+                normal: vertex.normal.clone().transformDirection(this.accumulatedNormalTransformation),
                 textureCoordinate: vertex.textureCoordinate
             };
         }

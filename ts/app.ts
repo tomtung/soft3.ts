@@ -30,7 +30,9 @@
         flush(display, true);
     }
 
-    // Helper function for Homework 2 & 3: parse triangle data string
+    // ---- Homework 2 ----
+
+    // Helper function for Homework 2 and beyond: parse triangle data string
     function parseTriangles(trianglesData: string, invertZ: boolean = true): CS580GL.MeshTriangle[] {
         var result = [];
 
@@ -56,16 +58,20 @@
         return result;
     }
 
-    // ---- Homework 2 ----
-
     function renderHomework2(screenPotData: string, flush: (display: CS580GL.Display, toImageFile?: boolean) => void): void {
         var display = new CS580GL.Display(256, 256).reset(defaultBackgroundPixel);
         var renderer = new CS580GL.Renderer(display);
         renderer.shading = CS580GL.ShadingMode.Flat;
-        renderer.directionalLights.push({
-            direction: new CS580GL.Vector3(0.707, 0.5, 0.5),
-            color: new CS580GL.Color(0.95, 0.65, 0.88)
-        });
+        renderer.directionalLights = [
+            {
+                direction: new CS580GL.Vector3(-0.707, -0.5, -0.5),
+                color: new CS580GL.Color(0.95, 0.65, 0.88)
+            },
+            {
+                direction: new CS580GL.Vector3(0.707, 0.5, 0.5),
+                color: new CS580GL.Color(0.95, 0.65, 0.88)
+            }
+        ];
 
         var triangles = parseTriangles(screenPotData, false);
         for (var i = 0; i < triangles.length; i += 1) {
@@ -77,59 +83,153 @@
 
     // ---- Homework 3 ----
 
-    function renderHomework3(potData: string, getParameters: () => any, flush: (display: CS580GL.Display, toImageFile?: boolean) => void): void {
-        var display = new CS580GL.Display(256, 256);
-
-        var renderer = new CS580GL.Renderer(display);
-
-        renderer.shading = CS580GL.ShadingMode.Flat;
-        renderer.directionalLights.push({
-            direction: new CS580GL.Vector3(0.707, 0.5, 0.5),
-            color: new CS580GL.Color(0.95, 0.65, 0.88)
-        });
-
-        renderer.camera = new CS580GL.Camera({
+    // Helper function for Homework 3 and beyond: create a default camera
+    function getDefaultCamera(): CS580GL.Camera {
+        return new CS580GL.Camera({
             position: new CS580GL.Vector3(13.2, -8.7, 14.8),
             lookAtTarget: new CS580GL.Vector3(0.8, 0.7, -4.5),
             up: new CS580GL.Vector3(-0.2, 1.0, 0),
             fov: 53.7 / 180 * Math.PI
         });
+    }
+
+    // Helper function for Homework 3 and beyond: apply transformations according to parameter settings
+    function applyTransformationParams(renderer: CS580GL.Renderer, params: any) {
+        renderer.toWorldTransformationStack = [
+            CS580GL.Matrix4.makeTranslation(params.translate.x, params.translate.y, params.translate.z),
+            CS580GL.Matrix4.makeRotationZ(params.rotate.z),
+            CS580GL.Matrix4.makeRotationY(params.rotate.y),
+            CS580GL.Matrix4.makeRotationX(params.rotate.x),
+            CS580GL.Matrix4.makeScale(params.scale.x, params.scale.y, params.scale.z)
+        ];
+
+        renderer.normalTransformationStack = [
+            CS580GL.Matrix4.makeRotationZ(params.rotate.z),
+            CS580GL.Matrix4.makeRotationY(params.rotate.y),
+            CS580GL.Matrix4.makeRotationX(params.rotate.x)
+        ];
+
+        if (params.rotateCamera) {
+            if (params.rotateCameraY) {
+                renderer.camera.position.applyAsHomogeneous(CS580GL.Matrix4.makeRotationY(1 / 180 * Math.PI));
+            }
+            renderer.camera.updateLookAtMatrix();
+        }
+
+        renderer.updateAccumulatedTransformation();
+    }
+
+    function renderHomework3(potData: string, getParameters: () => any, flush: (display: CS580GL.Display, toImageFile?: boolean) => void): void {
+        var display = new CS580GL.Display(256, 256);
+
+        var renderer = new CS580GL.Renderer(display);
+        renderer.camera = getDefaultCamera();
+
+        renderer.shading = CS580GL.ShadingMode.Flat;
+        renderer.directionalLights = [
+            {
+                direction: new CS580GL.Vector3(0.707, 0.5, -0.5),
+                color: new CS580GL.Color(0.95, 0.65, 0.88)
+            },
+            {
+                direction: new CS580GL.Vector3(-0.707, -0.5, 0.5),
+                color: new CS580GL.Color(0.95, 0.65, 0.88)
+            }
+        ];
 
         var triangles = parseTriangles(potData);
 
         var renderLoop = (toImageFile: boolean = false) => {
             var parameters = getParameters();
 
-            if (!parameters.isCurrent) {
+            if (parameters.selection !== "hw3") {
                 return;
             }
 
             display.reset(defaultBackgroundPixel);
-            renderer.toWorldTransformationStack = [
-                CS580GL.Matrix4.makeTranslation(parameters.translate.x, parameters.translate.y, parameters.translate.z),
-                CS580GL.Matrix4.makeRotationZ(parameters.rotate.z),
-                CS580GL.Matrix4.makeRotationY(parameters.rotate.y),
-                CS580GL.Matrix4.makeRotationX(parameters.rotate.x),
-                CS580GL.Matrix4.makeScale(parameters.scale.x, parameters.scale.y, parameters.scale.z)
-            ];
-
-            renderer.updateAccumulatedTransformation();
+            applyTransformationParams(renderer, parameters);
 
             for (var i = 0; i < triangles.length; i += 1) {
-                var shadingNormal = triangles[i].a.normal.clone();
-                shadingNormal.setZ(-shadingNormal.z);
-
                 renderer.renderTriangle(triangles[i]);
             }
 
             flush(display, toImageFile);
 
             if (parameters.rotateCamera) {
-                renderer.camera.position.applyAsHomogeneous(CS580GL.Matrix4.makeRotationY(1 / 180 * Math.PI));
-                renderer.camera.updateLookAtMatrix();
                 requestAnimationFrame(() => renderLoop());
             } else {
                 setTimeout(() => requestAnimationFrame(() => renderLoop()), 100);
+            }
+        };
+
+        renderLoop(true);
+    }
+
+    // ---- Homework 4 ----
+
+    function renderHomework4(potData: string, getParameters: () => any, flush: (display: CS580GL.Display, toImageFile?: boolean) => void): void {
+        var display = new CS580GL.Display(256, 256);
+
+        var renderer = new CS580GL.Renderer(display);
+        renderer.camera = getDefaultCamera();
+
+        renderer.ambientCoefficient = 0.1;
+        renderer.diffuseCoefficient = 0.7;
+        renderer.specularCoefficient = 0.3;
+        renderer.shininess = 32;
+        renderer.ambientLight = new CS580GL.Color(0.3, 0.3, 0.3);
+        renderer.directionalLights = [
+            {
+                direction: new CS580GL.Vector3(-0.7071, 0.7071, 0),
+                color: new CS580GL.Color(0.5, 0.5, 0.9)
+            },
+            {
+                direction: new CS580GL.Vector3(0, -0.7071, 0.7071),
+                color: new CS580GL.Color(0.9, 0.2, 0.3)
+            },
+            {
+                direction: new CS580GL.Vector3(0.7071, 0.0, 0.7071),
+                color: new CS580GL.Color(0.2, 0.7, 0.3)
+            }
+        ];
+
+        var triangles = parseTriangles(potData);
+
+        var renderLoop = (toImageFile: boolean = false) => {
+            var parameters = getParameters();
+
+            if (parameters.selection !== "hw4") {
+                return;
+            }
+
+            var oldShading = renderer.shading;
+            switch (parameters.shading) {
+                case "flat":
+                    renderer.shading = CS580GL.ShadingMode.Flat;
+                    break;
+                case "gouraud":
+                    renderer.shading = CS580GL.ShadingMode.Gouraud;
+                    break;
+                case "phong":
+                    renderer.shading = CS580GL.ShadingMode.Phong;
+                    break;
+                default:
+                    debugger;
+            }
+
+            display.reset(defaultBackgroundPixel);
+            applyTransformationParams(renderer, parameters);
+
+            for (var i = 0; i < triangles.length; i += 1) {
+                renderer.renderTriangle(triangles[i]);
+            }
+
+            flush(display, toImageFile);
+
+            if (parameters.rotateCamera) {
+                requestAnimationFrame(() => renderLoop(oldShading !== renderer.shading));
+            } else {
+                setTimeout(() => requestAnimationFrame(() => renderLoop(oldShading !== renderer.shading)), 100);
             }
         };
 
@@ -153,7 +253,7 @@
         var downloadAnchorElem = <HTMLAnchorElement> document.getElementById("download");
         var selectElem = <HTMLSelectElement> document.getElementById("select");
 
-        var hw3ControlsElem = <HTMLDivElement> document.getElementById("hw3-controls");
+        var transformControlsElem = <HTMLDivElement> document.getElementById("transform-controls");
         var rotateCameraElem = <HTMLInputElement> document.getElementById("camera-rotation");
         var translateXElem = <HTMLInputElement> document.getElementById("translate-x");
         var translateYElem = <HTMLInputElement> document.getElementById("translate-y");
@@ -165,9 +265,12 @@
         var scaleYElem = <HTMLInputElement> document.getElementById("scale-y");
         var scaleZElem = <HTMLInputElement> document.getElementById("scale-z");
 
+        var shadingControlsElem = <HTMLDivElement> document.getElementById("shading-controls");
+        var shadingElem = <HTMLSelectElement> document.getElementById("shading");
+
         // Utility function for getting parameters from input elements
         var getParameters = () => {
-            return {
+            var params: any = {
                 translate: {
                     x: parseFloat(translateXElem.value),
                     y: parseFloat(translateYElem.value),
@@ -183,9 +286,12 @@
                     y: parseFloat(scaleYElem.value),
                     z: parseFloat(scaleZElem.value)
                 },
-                isCurrent: selectElem.value == "hw3",
-                rotateCamera: rotateCameraElem.checked
+                selection: <string> selectElem.value,
+                rotateCameraY: rotateCameraElem.checked,
+                shading: shadingElem.value
             };
+            params.rotateCamera = params.rotateCameraY;
+            return params;
         };
 
         // Utility function for flushing the Display into both the Canvas and a PPM file
@@ -206,7 +312,17 @@
             URL.revokeObjectURL(downloadAnchorElem.href);
             downloadAnchorElem.href = "#";
 
-            hw3ControlsElem.style.visibility = selectElem.value == "hw3" ? "visible" : "collapse";
+            if (selectElem.value === "hw1" || selectElem.value === "hw2") {
+                transformControlsElem.style.visibility = "collapse";
+            } else {
+                transformControlsElem.style.visibility = "visible";
+            }
+
+            if (selectElem.value === "hw4") {
+                shadingControlsElem.style.visibility = "visible";
+            } else {
+                shadingControlsElem.style.visibility = "collapse";
+            }
 
             switch (selectElem.value) {
                 case "hw1":
@@ -227,6 +343,13 @@
                     canvasElem.height = canvasElem.width = 256;
                     loadTextFileAsync("data/pot4.asc", text => {
                         renderHomework3(text, getParameters, flush);
+                    });
+                    break;
+
+                case "hw4":
+                    canvasElem.height = canvasElem.width = 256;
+                    loadTextFileAsync("data/pot4.asc", text => {
+                        renderHomework4(text, getParameters, flush);
                     });
                     break;
 
