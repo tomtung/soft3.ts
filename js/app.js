@@ -964,10 +964,10 @@ var CS580GL;
             this.directionalLights.forEach(function (light) {
                 var l = light.direction.normalize();
 
-                var nDotL = normal.dot(l), reflectZ;
-                if (nDotL > 0 && normal.z > 0) {
-                    reflectZ = n.dot(light.direction);
-                } else if (nDotL < 0 && normal.z < 0) {
+                var nDotL = n.dot(l), reflectZ;
+                if (nDotL > 0 && n.z > 0) {
+                    reflectZ = Renderer.computeReflectZ(n, l);
+                } else if (nDotL < 0 && n.z < 0) {
                     n.negate();
                     nDotL = -nDotL;
                     reflectZ = Renderer.computeReflectZ(n, l);
@@ -1183,7 +1183,6 @@ var CS580GL;
         };
 
         Renderer.prototype.getTransformedVertex = function (vertex) {
-            // Note that normal is not transformed, because we don't transform lighting either
             return {
                 position: vertex.position.clone().applyAsHomogeneous(this.accumulatedTransformation),
                 normal: vertex.normal.clone().transformDirection(this.accumulatedNormalTransformation),
