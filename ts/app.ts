@@ -128,11 +128,11 @@
         renderer.shading = CS580GL.ShadingMode.Flat;
         renderer.directionalLights = [
             {
-                direction: new CS580GL.Vector3(0.707, 0.5, -0.5),
+                direction: new CS580GL.Vector3(0.818, 0.523, -0.23),
                 color: new CS580GL.Color(0.95, 0.65, 0.88)
             },
             {
-                direction: new CS580GL.Vector3(-0.707, -0.5, 0.5),
+                direction: new CS580GL.Vector3(-0.818, -0.523, 0.23),
                 color: new CS580GL.Color(0.95, 0.65, 0.88)
             }
         ];
