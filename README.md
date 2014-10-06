@@ -1,8 +1,14 @@
-This is a software implementation of a 3-D graphics engine by [Yubing Dong](https://github.com/tomtung/) for course [CSCI 580 - 3-D Graphics and Rendering](http://www-bcf.usc.edu/~saty/edu/courses/CS580/f14/) in the Fall 2014 semester. See [demo](https://tomtung.github.io/CS580/).
+This is a software implementation of a 3-D graphics engine by [Yubing Dong](https://github.com/tomtung/) for course [CSCI 580 - 3-D Graphics and Rendering](http://www-bcf.usc.edu/~saty/edu/courses/CS580/f14/) in the Fall 2014 semester.
+
+For an online demo, see [demo](https://tomtung.github.io/CS580/). To run this HTML application locally, you need to start an HTTP server. For example, if you have Python installed, in the folder simply run
+
+	python -m SimpleHTTPServer
+
+then visit [localhost:8000](http://localhost:8000/) in your browser.
 
 ## Build
 
-To generate `js/app.js`:
+When `*.ts` files are modified, it is necessary to regenerate `js/app.js`:
 
 	tsc -d --out js/app.js --target ES5 ts/app.ts
 
