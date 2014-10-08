@@ -83,8 +83,8 @@
 
     // ---- Homework 3 ----
 
-    // Helper function for Homework 3 and beyond: create a default camera
-    function getDefaultCamera(): CS580GL.Camera {
+    // Helper function for Homework 3 and 4: create a default camera
+    function getDefaultCamera1(): CS580GL.Camera {
         return new CS580GL.Camera({
             position: new CS580GL.Vector3(13.2, -8.7, 14.8),
             lookAtTarget: new CS580GL.Vector3(0.8, 0.7, -4.5),
@@ -123,7 +123,7 @@
         var display = new CS580GL.Display(256, 256);
 
         var renderer = new CS580GL.Renderer(display);
-        renderer.camera = getDefaultCamera();
+        renderer.camera = getDefaultCamera1();
 
         renderer.shading = CS580GL.ShadingMode.Flat;
         renderer.directionalLights = [
@@ -171,7 +171,7 @@
         var display = new CS580GL.Display(256, 256);
 
         var renderer = new CS580GL.Renderer(display);
-        renderer.camera = getDefaultCamera();
+        renderer.camera = getDefaultCamera1();
 
         renderer.ambientCoefficient = 0.1;
         renderer.diffuseCoefficient = 0.7;
@@ -236,6 +236,87 @@
         renderLoop(true);
     }
 
+    // ---- Homework 5 ----
+
+    // Helper function for Homework 5: create a default camera
+    function getDefaultCamera2(): CS580GL.Camera {
+        return new CS580GL.Camera({
+            position: new CS580GL.Vector3(-3, -25, 4),
+            lookAtTarget: new CS580GL.Vector3(7.8, 0.7, -6.5),
+            up: new CS580GL.Vector3(-0.2, 1.0, 0),
+            fov: 63.7 / 180 * Math.PI
+        });
+    }
+
+    function renderHomework5(potData: string, getParameters: () => any, flush: (display: CS580GL.Display, toImageFile?: boolean) => void): void {
+        var display = new CS580GL.Display(256, 256);
+
+        var renderer = new CS580GL.Renderer(display);
+        renderer.camera = getDefaultCamera2();
+
+        renderer.ambientCoefficient = 0.1;
+        renderer.diffuseCoefficient = 0.7;
+        renderer.specularCoefficient = 0.3;
+        renderer.shininess = 32;
+        renderer.ambientLight = new CS580GL.Color(0.3, 0.3, 0.3);
+        renderer.directionalLights = [
+            {
+                direction: new CS580GL.Vector3(-0.7071, 0.7071, 0),
+                color: new CS580GL.Color(0.5, 0.5, 0.9)
+            },
+            {
+                direction: new CS580GL.Vector3(0, -0.7071, 0.7071),
+                color: new CS580GL.Color(0.9, 0.2, 0.3)
+            },
+            {
+                direction: new CS580GL.Vector3(0.7071, 0.0, 0.7071),
+                color: new CS580GL.Color(0.2, 0.7, 0.3)
+            }
+        ];
+
+        var triangles = parseTriangles(potData);
+
+        var renderLoop = (toImageFile: boolean = false) => {
+            var parameters = getParameters();
+
+            if (parameters.selection !== "hw5") {
+                return;
+            }
+
+            var oldShading = renderer.shading;
+            switch (parameters.shading) {
+                case "flat":
+                    renderer.shading = CS580GL.ShadingMode.Flat;
+                    break;
+                case "gouraud":
+                    renderer.shading = CS580GL.ShadingMode.Gouraud;
+                    break;
+                case "phong":
+                    renderer.shading = CS580GL.ShadingMode.Phong;
+                    break;
+                default:
+                    debugger;
+            }
+
+            display.reset(defaultBackgroundPixel);
+            applyTransformationParams(renderer, parameters);
+
+            for (var i = 0; i < triangles.length; i += 1) {
+                renderer.renderTriangle(triangles[i]);
+            }
+
+            flush(display, toImageFile);
+
+            if (parameters.rotateCamera) {
+                requestAnimationFrame(() => renderLoop(oldShading !== renderer.shading));
+            } else {
+                setTimeout(() => requestAnimationFrame(() => renderLoop(oldShading !== renderer.shading)), 100);
+            }
+        };
+
+        renderLoop(true);
+    }
+
     // Utility function for loading text file content
     function loadTextFileAsync(url: string, callback: (string) => any): void {
         var client = new XMLHttpRequest();
@@ -246,6 +327,22 @@
             }
         };
         client.send();
+    }
+
+    // Utility function for loading
+    function loadImageDataAsync(src: string, callback: (ImageData) => any): void {
+        var canvas = <HTMLCanvasElement> document.createElement("canvas");
+        var image = new Image();
+        image.crossOrigin = "Anonymous";
+        image.onload = () => {
+            canvas.width = image.width;
+            canvas.height = image.height;
+            var context = canvas.getContext('2d');
+            context.drawImage(image, 0, 0);
+            var imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+            callback(imageData);
+        };
+        image.src = "data/texture.png";
     }
 
     window.onload = () => {
@@ -318,7 +415,7 @@
                 transformControlsElem.style.visibility = "visible";
             }
 
-            if (selectElem.value === "hw4") {
+            if (selectElem.value === "hw4" || selectElem.value === "hw5") {
                 shadingControlsElem.style.visibility = "visible";
             } else {
                 shadingControlsElem.style.visibility = "collapse";
@@ -353,6 +450,15 @@
                     });
                     break;
 
+                case "hw5":
+                    canvasElem.height = canvasElem.width = 256;
+                    loadTextFileAsync("data/ppot.asc", text => {
+                        renderHomework5(text, getParameters, flush);
+                    });
+//                    loadImageDataAsync("data/texture.png", imageData => {
+//                       canvasElem.getContext('2d').putImageData(imageData, 0, 0);
+//                    });
+                    break;
                 default:
             }
         };
