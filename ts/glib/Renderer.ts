@@ -27,6 +27,38 @@ module CS580GL {
         normal2?: Vector3
     }
 
+    export interface ITexture {
+        (s: number, t: number): Color;
+    }
+
+    export function makeImageTexture(image: ImageData): ITexture {
+        var colorAt = (x: number, y: number) => {
+            var rIndex = (x + y * image.width)*4;
+            var gIndex = rIndex + 1;
+            var bIndex = gIndex + 1;
+
+            return new Color(image.data[rIndex], image.data[rIndex], image.data[bIndex]);
+        };
+
+        return (s: number, t: number) => {
+            s = clamp(s, 0, 1);
+            t = clamp(t, 0, 1);
+
+            var x = (image.width - 1) * s;
+            var y = (image.height - 1) * t;
+
+            var x1 = Math.floor(x);
+            var x2 = Math.min(x1 + 1, image.width - 1);
+            var y1 = Math.floor(y);
+            var y2 = Math.min(y1 + 1, image.height - 1);
+
+            return colorAt(x1, y1).multiplyScalar((x2-x)*(y2-y)).
+                add(colorAt(x1, y2).multiplyScalar((x2-x)*(y-y1))).
+                add(colorAt(x2, y1).multiplyScalar((x-x1)*(y2-y))).
+                add(colorAt(x2, y2).multiplyScalar((x-x1)*(y-y1)));
+        }
+    }
+
     /** Render objects constructor */
     export class Renderer {
         camera: Camera;

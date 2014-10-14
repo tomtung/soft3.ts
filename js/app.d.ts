@@ -264,6 +264,10 @@ declare module CS580GL {
         normal1?: Vector3;
         normal2?: Vector3;
     }
+    interface ITexture {
+        (s: number, t: number): Color;
+    }
+    function makeImageTexture(image: ImageData): ITexture;
     /** Render objects constructor */
     class Renderer {
         public display: Display;

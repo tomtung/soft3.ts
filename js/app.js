@@ -842,6 +842,32 @@ var CS580GL;
     })(CS580GL.ShadingMode || (CS580GL.ShadingMode = {}));
     var ShadingMode = CS580GL.ShadingMode;
 
+    function makeImageTexture(image) {
+        var colorAt = function (x, y) {
+            var rIndex = (x + y * image.width) * 4;
+            var gIndex = rIndex + 1;
+            var bIndex = gIndex + 1;
+
+            return new CS580GL.Color(image.data[rIndex], image.data[rIndex], image.data[bIndex]);
+        };
+
+        return function (s, t) {
+            s = CS580GL.clamp(s, 0, 1);
+            t = CS580GL.clamp(t, 0, 1);
+
+            var x = (image.width - 1) * s;
+            var y = (image.height - 1) * t;
+
+            var x1 = Math.floor(x);
+            var x2 = Math.min(x1 + 1, image.width - 1);
+            var y1 = Math.floor(y);
+            var y2 = Math.min(y1 + 1, image.height - 1);
+
+            return colorAt(x1, y1).multiplyScalar((x2 - x) * (y2 - y)).add(colorAt(x1, y2).multiplyScalar((x2 - x) * (y - y1))).add(colorAt(x2, y1).multiplyScalar((x - x1) * (y2 - y))).add(colorAt(x2, y2).multiplyScalar((x - x1) * (y - y1)));
+        };
+    }
+    CS580GL.makeImageTexture = makeImageTexture;
+
     /** Render objects constructor */
     var Renderer = (function () {
         function Renderer(display) {
