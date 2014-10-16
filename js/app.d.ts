@@ -222,10 +222,17 @@ declare module CS580GL {
         public x: number;
         public y: number;
         constructor(x?: number, y?: number);
+        public clone(): Vector2;
         public setXY(x: number, y: number): Vector2;
         public setX(value: number): Vector2;
         public setY(value: number): Vector2;
         public copyFrom(v: Vector2): Vector2;
+        public multiplyScalar(scalar: number): Vector2;
+        static multiplyScalar(v: Vector2, scalar: number): Vector2;
+        public add(other: Vector2): Vector2;
+        static add(v1: Vector2, v2: Vector2): Vector2;
+        public subtract(other: Vector2): Vector2;
+        static subtract(v1: Vector2, v2: Vector2): Vector2;
     }
 }
 declare module CS580GL {
@@ -235,8 +242,8 @@ declare module CS580GL {
     */
     interface IMeshVertex {
         position: Vector3;
-        normal?: Vector3;
-        textureCoordinate?: Vector2;
+        normal: Vector3;
+        textureCoordinate: Vector2;
     }
     /** A TriangleFace object represents a triangle face in a triangle mesh */
     class MeshTriangle {
@@ -267,6 +274,7 @@ declare module CS580GL {
     interface ITexture {
         (s: number, t: number): Color;
     }
+    var allWhiteTexture: ITexture;
     function makeImageTexture(image: ImageData): ITexture;
     /** Render objects constructor */
     class Renderer {
@@ -284,15 +292,17 @@ declare module CS580GL {
         public diffuseCoefficient: number;
         public specularCoefficient: number;
         public shininess: number;
+        public texture: ITexture;
         constructor(display: Display);
         /** Update the to-screen transformation matrix. Must be invoked if  display is changed. */
         public updateToScreenTransformation(): Renderer;
         /** Update the perspective matrix. Must be invoked if camera, display, or to-world transformations are changed. */
         public updateAccumulatedTransformation(): Renderer;
         public renderPixel(x: number, y: number, z: number, color: Color): Renderer;
-        public drawScanLine(x1: number, z1: number, x2: number, z2: number, y: number, shadingParams: IShadingParams): void;
+        private getTextureColorFromScreenSpace(sScreen, tScreen, zScreen);
+        private drawScanLine(y, x1, x2, z1, z2, st1, st2, shadingParams);
         private static computeReflectZ(n, l);
-        private shadeByNormal(normal);
+        private shadeByNormal(normal, textureColor?);
         public renderScreenTriangle(triangle: MeshTriangle): Renderer;
         private getTransformedVertex(vertex);
         public renderTriangle(triangle: MeshTriangle): Renderer;

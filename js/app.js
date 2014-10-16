@@ -168,9 +168,6 @@ var CS580GL;
         };
 
         Color.prototype.clamp = function () {
-            if (this.red > 1 && this.green > 1 && this.blue > 1) {
-                debugger;
-            }
             this.red = CS580GL.clamp(this.red, 0, 1);
             this.green = CS580GL.clamp(this.green, 0, 1);
             this.blue = CS580GL.clamp(this.blue, 0, 1);
@@ -783,6 +780,10 @@ var CS580GL;
             this.x = x;
             this.y = y;
         }
+        Vector2.prototype.clone = function () {
+            return new Vector2(this.x, this.y);
+        };
+
         Vector2.prototype.setXY = function (x, y) {
             this.x = x;
             this.y = y;
@@ -803,6 +804,36 @@ var CS580GL;
             this.x = v.x;
             this.y = v.y;
             return this;
+        };
+
+        Vector2.prototype.multiplyScalar = function (scalar) {
+            this.x *= scalar;
+            this.y *= scalar;
+            return this;
+        };
+
+        Vector2.multiplyScalar = function (v, scalar) {
+            return v.clone().multiplyScalar(scalar);
+        };
+
+        Vector2.prototype.add = function (other) {
+            this.x += other.x;
+            this.y += other.y;
+            return this;
+        };
+
+        Vector2.add = function (v1, v2) {
+            return v1.clone().add(v2);
+        };
+
+        Vector2.prototype.subtract = function (other) {
+            this.x -= other.x;
+            this.y -= other.y;
+            return this;
+        };
+
+        Vector2.subtract = function (v1, v2) {
+            return v1.clone().subtract(v2);
         };
         return Vector2;
     })();
@@ -842,26 +873,34 @@ var CS580GL;
     })(CS580GL.ShadingMode || (CS580GL.ShadingMode = {}));
     var ShadingMode = CS580GL.ShadingMode;
 
+    CS580GL.allWhiteTexture = function (s, t) {
+        return new CS580GL.Color(1, 1, 1);
+    };
+
     function makeImageTexture(image) {
+        var height = image.height;
+        var width = image.width;
+        var data = new Uint8Array(image.data.length);
+        data.set(image.data);
         var colorAt = function (x, y) {
-            var rIndex = (x + y * image.width) * 4;
+            var rIndex = (x + y * width) * 4;
             var gIndex = rIndex + 1;
             var bIndex = gIndex + 1;
 
-            return new CS580GL.Color(image.data[rIndex], image.data[rIndex], image.data[bIndex]);
+            return CS580GL.Color.fromRGBUint8(data[rIndex], data[gIndex], data[bIndex]);
         };
 
         return function (s, t) {
             s = CS580GL.clamp(s, 0, 1);
             t = CS580GL.clamp(t, 0, 1);
 
-            var x = (image.width - 1) * s;
-            var y = (image.height - 1) * t;
+            var x = (width - 1) * s;
+            var y = (height - 1) * t;
 
             var x1 = Math.floor(x);
-            var x2 = Math.min(x1 + 1, image.width - 1);
+            var x2 = Math.min(x1 + 1, width - 1);
             var y1 = Math.floor(y);
-            var y2 = Math.min(y1 + 1, image.height - 1);
+            var y2 = Math.min(y1 + 1, height - 1);
 
             return colorAt(x1, y1).multiplyScalar((x2 - x) * (y2 - y)).add(colorAt(x1, y2).multiplyScalar((x2 - x) * (y - y1))).add(colorAt(x2, y1).multiplyScalar((x - x1) * (y2 - y))).add(colorAt(x2, y2).multiplyScalar((x - x1) * (y - y1)));
         };
@@ -883,6 +922,7 @@ var CS580GL;
             this.diffuseCoefficient = 1.0;
             this.specularCoefficient = 0.0;
             this.shininess = 0.0;
+            this.texture = CS580GL.allWhiteTexture;
             this.updateToScreenTransformation();
         }
         /** Update the to-screen transformation matrix. Must be invoked if  display is changed. */
@@ -929,32 +969,46 @@ var CS580GL;
             return this;
         };
 
-        Renderer.prototype.drawScanLine = function (x1, z1, x2, z2, y, shadingParams) {
+        Renderer.prototype.getTextureColorFromScreenSpace = function (sScreen, tScreen, zScreen) {
+            var coeff = zScreen / (CS580GL.Display.Z_MAX - zScreen) + 1;
+            var s = sScreen * coeff;
+            var t = tScreen * coeff;
+
+            return this.texture(s, t);
+        };
+
+        Renderer.prototype.drawScanLine = function (y, x1, x2, z1, z2, st1, st2, shadingParams) {
             var _this = this;
-            var mZ, x, z, invDeltaX, roundXOffset, color, mColor, normal, mNormal;
+            var mZ, x, z, invDeltaX, roundXOffset, gouraudColor, mGouraudColor, textureColor, color, normal, mNormal, mST, st;
+
             if (x1 >= this.display.width || x2 < 0) {
                 return;
             }
 
             invDeltaX = 1 / (x1 - x2);
             mZ = (z1 - z2) * invDeltaX;
+            mST = CS580GL.Vector2.subtract(st1, st2).multiplyScalar(invDeltaX);
 
             x = Math.max(0, Math.round(x1)); // Note: Use round instead of ceil
             roundXOffset = x - x1;
+
             z = z1 + mZ * roundXOffset;
+            st = st1.clone();
+            textureColor = this.getTextureColorFromScreenSpace(st.x, st.y, z);
 
             switch (this.shading) {
                 case 0 /* Flat */:
                     color = shadingParams.flatColor;
                     break;
                 case 1 /* Gouraud */:
-                    mColor = CS580GL.Color.subtract(shadingParams.color1, shadingParams.color2).multiplyScalar(invDeltaX);
-                    color = shadingParams.color1.clone(); // avoid clamping
+                    mGouraudColor = CS580GL.Color.subtract(shadingParams.color1, shadingParams.color2).multiplyScalar(invDeltaX);
+                    gouraudColor = shadingParams.color1.clone(); // avoid clamping
+                    color = CS580GL.Color.multiply(gouraudColor, textureColor);
                     break;
                 case 2 /* Phong */:
                     mNormal = CS580GL.Vector3.subtract(shadingParams.normal1, shadingParams.normal2).multiplyScalar(invDeltaX);
                     normal = CS580GL.Vector3.multiplyScalar(mNormal, roundXOffset).add(shadingParams.normal1);
-                    color = this.shadeByNormal(shadingParams.normal1); // avoid clamping
+                    color = this.shadeByNormal(shadingParams.normal1, textureColor); // avoid clamping
                     break;
                 default:
                     debugger;
@@ -963,16 +1017,30 @@ var CS580GL;
             var advance = function () {
                 x += 1;
                 z += mZ;
-                if (_this.shading === 1 /* Gouraud */) {
-                    color.add(mColor);
-                } else if (_this.shading === 2 /* Phong */) {
-                    normal.add(mNormal);
-                    color = _this.shadeByNormal(normal);
+
+                st.add(mST);
+                textureColor = _this.getTextureColorFromScreenSpace(st.x, st.y, z).clamp();
+
+                switch (_this.shading) {
+                    case 0 /* Flat */:
+                        color = CS580GL.Color.multiply(shadingParams.flatColor, textureColor);
+                        break;
+                    case 1 /* Gouraud */:
+                        gouraudColor.add(mGouraudColor);
+                        color = CS580GL.Color.multiply(gouraudColor, textureColor);
+                        break;
+                    case 2 /* Phong */:
+                        normal.add(mNormal);
+                        color = _this.shadeByNormal(normal, textureColor);
+                        break;
+                    default:
+                        debugger;
                 }
+
+                color.clamp();
             };
 
             for (; x < Math.min(x2, this.display.width - 1); advance()) {
-                color.clamp();
                 this.renderPixel(x, y, Math.round(z), color);
             }
         };
@@ -981,8 +1049,9 @@ var CS580GL;
             return n.dot(l) * 2 * n.z - l.z;
         };
 
-        Renderer.prototype.shadeByNormal = function (normal) {
+        Renderer.prototype.shadeByNormal = function (normal, textureColor) {
             var _this = this;
+            if (typeof textureColor === "undefined") { textureColor = new CS580GL.Color(1, 1, 1); }
             var n = normal.clone().normalize();
 
             var diffuse = new CS580GL.Color(0, 0, 0), specular = new CS580GL.Color(0, 0, 0);
@@ -1005,7 +1074,7 @@ var CS580GL;
                 specular.add(CS580GL.Color.multiplyScalar(light.color, Math.pow(CS580GL.clamp(reflectZ, 0, 1), _this.shininess)));
             });
 
-            return CS580GL.Color.multiplyScalar(this.ambientLight, this.ambientCoefficient).add(specular.multiplyScalar(this.specularCoefficient)).add(diffuse.multiplyScalar(this.diffuseCoefficient)).clamp();
+            return CS580GL.Color.multiplyScalar(this.ambientLight, this.ambientCoefficient).add(diffuse.multiplyScalar(this.diffuseCoefficient)).multiply(textureColor).add(specular.multiplyScalar(this.specularCoefficient)).clamp();
         };
 
         Renderer.prototype.renderScreenTriangle = function (triangle) {
@@ -1020,12 +1089,15 @@ var CS580GL;
             var vNormal = function (i) {
                 return vertices[i].normal;
             };
+            var vST = function (i) {
+                return vertices[i].textureCoordinate;
+            };
 
             // Set up interpolation for x and z
-            // Order 01, 02, 12. Same for mX, mZ, x.
+            // Order 01, 02, 12. Same for mX, mZ, mST.
             var invDeltaY = [1 / (pos(0).y - pos(1).y), 1 / (pos(0).y - pos(2).y), 1 / (pos(1).y - pos(2).y)];
 
-            // Compute slopes mX = dx/dy and my = dz/dy
+            // Compute slopes mX = dx/dy, mY = dz/dy, mST = dST/dy
             var mX = [
                 invDeltaY[0] * (pos(0).x - pos(1).x),
                 invDeltaY[1] * (pos(0).x - pos(2).x),
@@ -1035,6 +1107,11 @@ var CS580GL;
                 invDeltaY[0] * (pos(0).z - pos(1).z),
                 invDeltaY[1] * (pos(0).z - pos(2).z),
                 invDeltaY[2] * (pos(1).z - pos(2).z)
+            ];
+            var mST = [
+                CS580GL.Vector2.subtract(vST(0), vST(1)).multiplyScalar(invDeltaY[0]),
+                CS580GL.Vector2.subtract(vST(0), vST(2)).multiplyScalar(invDeltaY[1]),
+                CS580GL.Vector2.subtract(vST(1), vST(2)).multiplyScalar(invDeltaY[2])
             ];
 
             var isMidVertexLeft = isFinite(mX[0]) && (mX[0] < mX[1]);
@@ -1053,6 +1130,11 @@ var CS580GL;
                 pos(0).z + mZ[0] * roundYOffset[0],
                 pos(0).z + mZ[1] * roundYOffset[0],
                 pos(1).z + mZ[2] * roundYOffset[1]
+            ];
+            var st = [
+                CS580GL.Vector2.multiplyScalar(mST[0], roundYOffset[0]).add(vST(0)),
+                CS580GL.Vector2.multiplyScalar(mST[1], roundYOffset[0]).add(vST(0)),
+                CS580GL.Vector2.multiplyScalar(mST[2], roundYOffset[1]).add(vST(1))
             ];
 
             var y = Math.ceil(pos(0).y);
@@ -1116,6 +1198,8 @@ var CS580GL;
                 z[0] += mZ[0];
                 x[1] += mX[1];
                 z[1] += mZ[1];
+                st[0].add(mST[0]);
+                st[1].add(mST[1]);
                 if (_this.shading === 1 /* Gouraud */) {
                     color[0].add(mColor[0]);
                     color[1].add(mColor[1]);
@@ -1130,6 +1214,8 @@ var CS580GL;
                 z[1] += mZ[1];
                 x[2] += mX[2];
                 z[2] += mZ[2];
+                st[1].add(mST[1]);
+                st[2].add(mST[2]);
                 if (_this.shading == 1 /* Gouraud */) {
                     color[1].add(mColor[1]);
                     color[2].add(mColor[2]);
@@ -1156,7 +1242,7 @@ var CS580GL;
                     };
                 }
                 for (; y < pos(1).y; upperAdvance()) {
-                    this.drawScanLine(x[0], z[0], x[1], z[1], y, shadingParams);
+                    this.drawScanLine(y, x[0], x[1], z[0], z[1], st[0], st[1], shadingParams);
                 }
 
                 if (this.shading === 1 /* Gouraud */) {
@@ -1171,7 +1257,7 @@ var CS580GL;
                     };
                 }
                 for (; y <= pos(2).y; lowerAdvance()) {
-                    this.drawScanLine(x[2], z[2], x[1], z[1], y, shadingParams);
+                    this.drawScanLine(y, x[2], x[1], z[2], z[1], st[2], st[1], shadingParams);
                 }
             } else {
                 if (this.shading === 1 /* Gouraud */) {
@@ -1186,7 +1272,7 @@ var CS580GL;
                     };
                 }
                 for (; y < pos(1).y; upperAdvance()) {
-                    this.drawScanLine(x[1], z[1], x[0], z[0], y, shadingParams);
+                    this.drawScanLine(y, x[1], x[0], z[1], z[0], st[1], st[0], shadingParams);
                 }
 
                 if (this.shading === 1 /* Gouraud */) {
@@ -1201,7 +1287,7 @@ var CS580GL;
                     };
                 }
                 for (; y <= pos(2).y; lowerAdvance()) {
-                    this.drawScanLine(x[1], z[1], x[2], z[2], y, shadingParams);
+                    this.drawScanLine(y, x[1], x[2], z[1], z[2], st[1], st[2], shadingParams);
                 }
             }
 
@@ -1209,10 +1295,15 @@ var CS580GL;
         };
 
         Renderer.prototype.getTransformedVertex = function (vertex) {
+            var screenPos = vertex.position.clone().applyAsHomogeneous(this.accumulatedTransformation);
+            var screenNormal = vertex.normal.clone().transformDirection(this.accumulatedNormalTransformation);
+            var warpFactor = 1 + screenPos.z / (CS580GL.Display.Z_MAX - screenPos.z);
+            var screenTexture = vertex.textureCoordinate.clone().multiplyScalar(1 / warpFactor);
+
             return {
-                position: vertex.position.clone().applyAsHomogeneous(this.accumulatedTransformation),
-                normal: vertex.normal.clone().transformDirection(this.accumulatedNormalTransformation),
-                textureCoordinate: vertex.textureCoordinate
+                position: screenPos,
+                normal: screenNormal,
+                textureCoordinate: screenTexture
             };
         };
 
@@ -1227,7 +1318,7 @@ var CS580GL;
 })(CS580GL || (CS580GL = {}));
 /// <reference path="glib/Renderer.ts" />
 (function () {
-    var defaultBackgroundColor = CS580GL.Color.fromRGBUint8(123, 112, 96);
+    var defaultBackgroundColor = CS580GL.Color.fromRGBUint8(130, 112, 95);
     var defaultBackgroundPixel = new CS580GL.Pixel().setColor(defaultBackgroundColor);
 
     // ---- Homework 1 ----
@@ -1274,7 +1365,7 @@ var CS580GL;
             };
         };
 
-        var lines = trianglesData.trim().split("\r");
+        var lines = trianglesData.trim().split(/\r\n?|\r?\n/);
         for (var i = 0; i < lines.length; i += 4) {
             var v1 = parseVertex(lines[i + 1]);
             var v2 = parseVertex(lines[i + 2]);
@@ -1539,6 +1630,9 @@ var CS580GL;
                     debugger;
             }
 
+            var oldTexture = renderer.texture;
+            renderer.texture = parameters.texture;
+
             display.reset(defaultBackgroundPixel);
             applyTransformationParams(renderer, parameters);
 
@@ -1548,14 +1642,15 @@ var CS580GL;
 
             flush(display, toImageFile);
 
+            var updateImageFile = (oldShading !== renderer.shading || oldTexture !== renderer.texture);
             if (parameters.rotateCamera) {
                 requestAnimationFrame(function () {
-                    return renderLoop(oldShading !== renderer.shading);
+                    return renderLoop(updateImageFile);
                 });
             } else {
                 setTimeout(function () {
                     return requestAnimationFrame(function () {
-                        return renderLoop(oldShading !== renderer.shading);
+                        return renderLoop(updateImageFile);
                     });
                 }, 100);
             }
@@ -1612,6 +1707,10 @@ var CS580GL;
         var shadingControlsElem = document.getElementById("shading-controls");
         var shadingElem = document.getElementById("shading");
 
+        var textureContainer = {
+            texture: CS580GL.allWhiteTexture
+        };
+
         // Utility function for getting parameters from input elements
         var getParameters = function () {
             var params = {
@@ -1632,7 +1731,8 @@ var CS580GL;
                 },
                 selection: selectElem.value,
                 rotateCameraY: rotateCameraElem.checked,
-                shading: shadingElem.value
+                shading: shadingElem.value,
+                texture: textureContainer.texture
             };
             params.rotateCamera = params.rotateCameraY;
             return params;
@@ -1700,10 +1800,12 @@ var CS580GL;
 
                 case "hw5":
                     canvasElem.height = canvasElem.width = 256;
-                    loadTextFileAsync("data/ppot.asc", function (text) {
-                        renderHomework5(text, getParameters, flush);
+                    loadImageDataAsync("data/texture.png", function (imageData) {
+                        textureContainer.texture = CS580GL.makeImageTexture(imageData);
+                        loadTextFileAsync("data/ppot.asc", function (text) {
+                            renderHomework5(text, getParameters, flush);
+                        });
                     });
-
                     break;
                 default:
             }

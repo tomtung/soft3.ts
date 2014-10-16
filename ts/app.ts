@@ -1,7 +1,7 @@
 ﻿/// <reference path="glib/Renderer.ts" />
 
 (() => {
-    var defaultBackgroundColor = CS580GL.Color.fromRGBUint8(123, 112, 96);
+    var defaultBackgroundColor = CS580GL.Color.fromRGBUint8(130, 112, 95);
     var defaultBackgroundPixel = new CS580GL.Pixel().setColor(defaultBackgroundColor);
 
     // ---- Homework 1 ----
@@ -45,7 +45,7 @@
             };
         };
 
-        var lines = trianglesData.trim().split("\r");
+        var lines = trianglesData.trim().split(/\r\n?|\r?\n/);
         for (var i = 0; i < lines.length; i += 4) {
             var v1 = parseVertex(lines[i + 1]);
             var v2 = parseVertex(lines[i + 2]);
@@ -298,6 +298,9 @@
                     debugger;
             }
 
+            var oldTexture = renderer.texture;
+            renderer.texture = parameters.texture;
+
             display.reset(defaultBackgroundPixel);
             applyTransformationParams(renderer, parameters);
 
@@ -307,10 +310,11 @@
 
             flush(display, toImageFile);
 
+            var updateImageFile = (oldShading !== renderer.shading || oldTexture !== renderer.texture);
             if (parameters.rotateCamera) {
-                requestAnimationFrame(() => renderLoop(oldShading !== renderer.shading));
+                requestAnimationFrame(() => renderLoop(updateImageFile));
             } else {
-                setTimeout(() => requestAnimationFrame(() => renderLoop(oldShading !== renderer.shading)), 100);
+                setTimeout(() => requestAnimationFrame(() => renderLoop(updateImageFile)), 100);
             }
         };
 
@@ -365,6 +369,10 @@
         var shadingControlsElem = <HTMLDivElement> document.getElementById("shading-controls");
         var shadingElem = <HTMLSelectElement> document.getElementById("shading");
 
+        var textureContainer = {
+            texture: CS580GL.allWhiteTexture
+        };
+
         // Utility function for getting parameters from input elements
         var getParameters = () => {
             var params: any = {
@@ -385,7 +393,8 @@
                 },
                 selection: <string> selectElem.value,
                 rotateCameraY: rotateCameraElem.checked,
-                shading: shadingElem.value
+                shading: shadingElem.value,
+                texture: textureContainer.texture
             };
             params.rotateCamera = params.rotateCameraY;
             return params;
@@ -452,12 +461,12 @@
 
                 case "hw5":
                     canvasElem.height = canvasElem.width = 256;
-                    loadTextFileAsync("data/ppot.asc", text => {
-                        renderHomework5(text, getParameters, flush);
+                    loadImageDataAsync("data/texture.png", imageData => {
+                        textureContainer.texture = CS580GL.makeImageTexture(imageData);
+                        loadTextFileAsync("data/ppot.asc", text => {
+                            renderHomework5(text, getParameters, flush);
+                        });
                     });
-//                    loadImageDataAsync("data/texture.png", imageData => {
-//                       canvasElem.getContext('2d').putImageData(imageData, 0, 0);
-//                    });
                     break;
                 default:
             }

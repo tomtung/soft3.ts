@@ -31,31 +31,37 @@ module CS580GL {
         (s: number, t: number): Color;
     }
 
+    export var allWhiteTexture: ITexture = (s: number, t: number) => new Color(1, 1, 1);
+
     export function makeImageTexture(image: ImageData): ITexture {
+        var height = image.height;
+        var width = image.width;
+        var data = new Uint8Array(image.data.length);
+        data.set(image.data);
         var colorAt = (x: number, y: number) => {
-            var rIndex = (x + y * image.width)*4;
+            var rIndex = (x + y * width) * 4;
             var gIndex = rIndex + 1;
             var bIndex = gIndex + 1;
 
-            return new Color(image.data[rIndex], image.data[rIndex], image.data[bIndex]);
+            return Color.fromRGBUint8(data[rIndex], data[gIndex], data[bIndex]);
         };
 
         return (s: number, t: number) => {
             s = clamp(s, 0, 1);
             t = clamp(t, 0, 1);
 
-            var x = (image.width - 1) * s;
-            var y = (image.height - 1) * t;
+            var x = (width - 1) * s;
+            var y = (height - 1) * t;
 
             var x1 = Math.floor(x);
-            var x2 = Math.min(x1 + 1, image.width - 1);
+            var x2 = Math.min(x1 + 1, width - 1);
             var y1 = Math.floor(y);
-            var y2 = Math.min(y1 + 1, image.height - 1);
+            var y2 = Math.min(y1 + 1, height - 1);
 
-            return colorAt(x1, y1).multiplyScalar((x2-x)*(y2-y)).
-                add(colorAt(x1, y2).multiplyScalar((x2-x)*(y-y1))).
-                add(colorAt(x2, y1).multiplyScalar((x-x1)*(y2-y))).
-                add(colorAt(x2, y2).multiplyScalar((x-x1)*(y-y1)));
+            return colorAt(x1, y1).multiplyScalar((x2 - x) * (y2 - y)).
+                add(colorAt(x1, y2).multiplyScalar((x2 - x) * (y - y1))).
+                add(colorAt(x2, y1).multiplyScalar((x - x1) * (y2 - y))).
+                add(colorAt(x2, y2).multiplyScalar((x - x1) * (y - y1)));
         }
     }
 
@@ -74,6 +80,7 @@ module CS580GL {
         diffuseCoefficient: number = 1.0;
         specularCoefficient: number = 0.0;
         shininess: number = 0.0;
+        texture: ITexture = allWhiteTexture;
 
         constructor(public display: Display) {
             this.updateToScreenTransformation();
@@ -125,31 +132,48 @@ module CS580GL {
             return this;
         }
 
-        drawScanLine(x1: number, z1: number, x2: number, z2: number, y: number, shadingParams: IShadingParams) {
-            var mZ: number, x: number, z: number, invDeltaX: number, roundXOffset: number, color: Color, mColor: Color, normal: Vector3, mNormal: Vector3;
+        private getTextureColorFromScreenSpace(sScreen: number, tScreen: number, zScreen: number) {
+            var coeff = zScreen / (Display.Z_MAX - zScreen) + 1;
+            var s = sScreen * coeff;
+            var t = tScreen * coeff;
+
+            return this.texture(s, t);
+        }
+
+        private drawScanLine(y: number, x1: number, x2: number, z1: number, z2: number, st1: Vector2, st2: Vector2, shadingParams: IShadingParams) {
+            var mZ: number, x: number, z: number, invDeltaX: number, roundXOffset: number,
+                gouraudColor: Color, mGouraudColor: Color, textureColor: Color, color: Color,
+                normal: Vector3, mNormal: Vector3,
+                mST: Vector2, st: Vector2;
+
             if (x1 >= this.display.width || x2 < 0) {
                 return;
             }
 
             invDeltaX = 1 / (x1 - x2);
             mZ = (z1 - z2) * invDeltaX;
+            mST = Vector2.subtract(st1, st2).multiplyScalar(invDeltaX);
 
             x = Math.max(0, Math.round(x1)); // Note: Use round instead of ceil
             roundXOffset = x - x1;
+
             z = z1 + mZ * roundXOffset;
+            st = st1.clone();
+            textureColor = this.getTextureColorFromScreenSpace(st.x, st.y, z);
 
             switch (this.shading) {
                 case ShadingMode.Flat:
                     color = shadingParams.flatColor;
                     break;
                 case ShadingMode.Gouraud:
-                    mColor = Color.subtract(shadingParams.color1, shadingParams.color2).multiplyScalar(invDeltaX);
-                    color = shadingParams.color1.clone(); // avoid clamping
+                    mGouraudColor = Color.subtract(shadingParams.color1, shadingParams.color2).multiplyScalar(invDeltaX);
+                    gouraudColor = shadingParams.color1.clone(); // avoid clamping
+                    color = Color.multiply(gouraudColor, textureColor);
                     break;
                 case ShadingMode.Phong:
                     mNormal = Vector3.subtract(shadingParams.normal1, shadingParams.normal2).multiplyScalar(invDeltaX);
                     normal = Vector3.multiplyScalar(mNormal, roundXOffset).add(shadingParams.normal1);
-                    color = this.shadeByNormal(shadingParams.normal1); // avoid clamping
+                    color = this.shadeByNormal(shadingParams.normal1, textureColor); // avoid clamping
                     break;
                 default:
                     debugger;
@@ -158,25 +182,39 @@ module CS580GL {
             var advance = () => {
                 x += 1;
                 z += mZ;
-                if (this.shading === ShadingMode.Gouraud) {
-                    color.add(mColor);
-                } else if (this.shading === ShadingMode.Phong) {
-                    normal.add(mNormal);
-                    color = this.shadeByNormal(normal);
+
+                st.add(mST);
+                textureColor = this.getTextureColorFromScreenSpace(st.x, st.y, z).clamp();
+
+                switch (this.shading) {
+                    case ShadingMode.Flat:
+                        color = Color.multiply(shadingParams.flatColor, textureColor);
+                        break;
+                    case ShadingMode.Gouraud:
+                        gouraudColor.add(mGouraudColor);
+                        color = Color.multiply(gouraudColor, textureColor);
+                        break;
+                    case ShadingMode.Phong:
+                        normal.add(mNormal);
+                        color = this.shadeByNormal(normal, textureColor);
+                        break;
+                    default:
+                        debugger;
                 }
+
+                color.clamp();
             };
 
             for (; x < Math.min(x2, this.display.width - 1); advance()) {
-                color.clamp();
                 this.renderPixel(x, y, Math.round(z), color);
             }
         }
 
         private static computeReflectZ(n: Vector3, l: Vector3): number {
-            return n.dot(l)*2*n.z - l.z;
+            return n.dot(l) * 2 * n.z - l.z;
         }
 
-        private shadeByNormal(normal: Vector3): Color {
+        private shadeByNormal(normal: Vector3, textureColor: Color = new Color(1,1,1)): Color {
             var n = normal.clone().normalize();
 
             var diffuse = new Color(0, 0, 0), specular = new Color(0, 0, 0);
@@ -204,9 +242,10 @@ module CS580GL {
             });
 
             return Color.multiplyScalar(this.ambientLight, this.ambientCoefficient).
-                    add(specular.multiplyScalar(this.specularCoefficient)).
-                    add(diffuse.multiplyScalar(this.diffuseCoefficient)).
-                    clamp();
+                add(diffuse.multiplyScalar(this.diffuseCoefficient)).
+                multiply(textureColor).
+                add(specular.multiplyScalar(this.specularCoefficient)).
+                clamp();
         }
 
         renderScreenTriangle(triangle: MeshTriangle): Renderer {
@@ -218,13 +257,14 @@ module CS580GL {
             );
             var pos = (i: number) => vertices[i].position;
             var vNormal = (i: number) => vertices[i].normal;
+            var vST = (i: number) => vertices[i].textureCoordinate;
 
             // Set up interpolation for x and z
 
-            // Order 01, 02, 12. Same for mX, mZ, x.
+            // Order 01, 02, 12. Same for mX, mZ, mST.
             var invDeltaY = [1 / (pos(0).y - pos(1).y), 1 / (pos(0).y - pos(2).y), 1 / (pos(1).y - pos(2).y)];
 
-            // Compute slopes mX = dx/dy and my = dz/dy
+            // Compute slopes mX = dx/dy, mY = dz/dy, mST = dST/dy
             var mX = [
                     invDeltaY[0] * (pos(0).x - pos(1).x),
                     invDeltaY[1] * (pos(0).x - pos(2).x),
@@ -234,6 +274,11 @@ module CS580GL {
                     invDeltaY[0] * (pos(0).z - pos(1).z),
                     invDeltaY[1] * (pos(0).z - pos(2).z),
                     invDeltaY[2] * (pos(1).z - pos(2).z)
+            ];
+            var mST = [
+                Vector2.subtract(vST(0), vST(1)).multiplyScalar(invDeltaY[0]),
+                Vector2.subtract(vST(0), vST(2)).multiplyScalar(invDeltaY[1]),
+                Vector2.subtract(vST(1), vST(2)).multiplyScalar(invDeltaY[2])
             ];
 
             var isMidVertexLeft = isFinite(mX[0]) && (mX[0] < mX[1]);
@@ -252,6 +297,11 @@ module CS580GL {
                     pos(0).z + mZ[0] * roundYOffset[0],
                     pos(0).z + mZ[1] * roundYOffset[0],
                     pos(1).z + mZ[2] * roundYOffset[1]
+            ];
+            var st: Vector2[] = [
+                Vector2.multiplyScalar(mST[0], roundYOffset[0]).add(vST(0)),
+                Vector2.multiplyScalar(mST[1], roundYOffset[0]).add(vST(0)),
+                Vector2.multiplyScalar(mST[2], roundYOffset[1]).add(vST(1))
             ];
 
             var y = Math.ceil(pos(0).y);
@@ -316,6 +366,8 @@ module CS580GL {
                 z[0] += mZ[0];
                 x[1] += mX[1];
                 z[1] += mZ[1];
+                st[0].add(mST[0]);
+                st[1].add(mST[1]);
                 if (this.shading === ShadingMode.Gouraud) {
                     color[0].add(mColor[0]);
                     color[1].add(mColor[1]);
@@ -330,6 +382,8 @@ module CS580GL {
                 z[1] += mZ[1];
                 x[2] += mX[2];
                 z[2] += mZ[2];
+                st[1].add(mST[1]);
+                st[2].add(mST[2]);
                 if (this.shading == ShadingMode.Gouraud) {
                     color[1].add(mColor[1]);
                     color[2].add(mColor[2]);
@@ -356,7 +410,7 @@ module CS580GL {
                     }
                 }
                 for (; y < pos(1).y; upperAdvance()) {
-                    this.drawScanLine(x[0], z[0], x[1], z[1], y, shadingParams);
+                    this.drawScanLine(y, x[0], x[1], z[0], z[1], st[0], st[1], shadingParams);
                 }
 
                 if (this.shading === ShadingMode.Gouraud) {
@@ -371,7 +425,7 @@ module CS580GL {
                     }
                 }
                 for (; y <= pos(2).y; lowerAdvance()) {
-                    this.drawScanLine(x[2], z[2], x[1], z[1], y, shadingParams);
+                    this.drawScanLine(y, x[2], x[1], z[2], z[1], st[2], st[1], shadingParams);
                 }
             } else {
                 if (this.shading === ShadingMode.Gouraud) {
@@ -386,7 +440,7 @@ module CS580GL {
                     }
                 }
                 for (; y < pos(1).y; upperAdvance()) {
-                    this.drawScanLine(x[1], z[1], x[0], z[0], y, shadingParams);
+                    this.drawScanLine(y, x[1], x[0], z[1], z[0], st[1], st[0], shadingParams);
                 }
 
                 if (this.shading === ShadingMode.Gouraud) {
@@ -401,7 +455,7 @@ module CS580GL {
                     }
                 }
                 for (; y <= pos(2).y; lowerAdvance()) {
-                    this.drawScanLine(x[1], z[1], x[2], z[2], y, shadingParams);
+                    this.drawScanLine(y, x[1], x[2], z[1], z[2], st[1], st[2], shadingParams);
                 }
             }
 
@@ -409,10 +463,15 @@ module CS580GL {
         }
 
         private getTransformedVertex(vertex: IMeshVertex): IMeshVertex {
+            var screenPos = vertex.position.clone().applyAsHomogeneous(this.accumulatedTransformation);
+            var screenNormal = vertex.normal.clone().transformDirection(this.accumulatedNormalTransformation);
+            var warpFactor = 1 + screenPos.z / (Display.Z_MAX - screenPos.z);
+            var screenTexture = vertex.textureCoordinate.clone().multiplyScalar(1 / warpFactor);
+
             return {
-                position: vertex.position.clone().applyAsHomogeneous(this.accumulatedTransformation),
-                normal: vertex.normal.clone().transformDirection(this.accumulatedNormalTransformation),
-                textureCoordinate: vertex.textureCoordinate
+                position: screenPos,
+                normal: screenNormal,
+                textureCoordinate: screenTexture
             };
         }
 

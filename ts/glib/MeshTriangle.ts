@@ -9,8 +9,8 @@ module CS580GL {
      */
     export interface IMeshVertex {
         position: Vector3;
-        normal?: Vector3;
-        textureCoordinate?: Vector2;
+        normal: Vector3;
+        textureCoordinate: Vector2;
     }
 
     /** A TriangleFace object represents a triangle face in a triangle mesh */
