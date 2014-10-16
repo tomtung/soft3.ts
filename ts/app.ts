@@ -249,6 +249,7 @@
     }
 
     function renderHomework5(potData: string, getParameters: () => any, flush: (display: CS580GL.Display, toImageFile?: boolean) => void): void {
+        var backgroundPixel = new CS580GL.Pixel().setColor(new CS580GL.Color(249,249,249));
         var display = new CS580GL.Display(256, 256);
 
         var renderer = new CS580GL.Renderer(display);
@@ -301,7 +302,7 @@
             var oldTexture = renderer.texture;
             renderer.texture = parameters.texture;
 
-            display.reset(defaultBackgroundPixel);
+            display.reset(backgroundPixel);
             applyTransformationParams(renderer, parameters);
 
             for (var i = 0; i < triangles.length; i += 1) {

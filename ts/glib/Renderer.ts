@@ -154,7 +154,7 @@ module CS580GL {
             mZ = (z1 - z2) * invDeltaX;
             mST = Vector2.subtract(st1, st2).multiplyScalar(invDeltaX);
 
-            x = Math.max(0, Math.round(x1)); // Note: Use round instead of ceil
+            x = Math.round(x1); // Note: Use round instead of ceil
             roundXOffset = x - x1;
 
             z = z1 + mZ * roundXOffset;
