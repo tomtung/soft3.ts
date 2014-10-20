@@ -167,7 +167,7 @@ module CS580GL {
                     color = textureColor.clone();
                     break;
                 case ShadingMode.Flat:
-                    color = shadingParams.flatColor;
+                    color = Color.multiply(shadingParams.flatColor, textureColor);
                     break;
                 case ShadingMode.Gouraud:
                     mGouraudColor = Color.subtract(shadingParams.color1, shadingParams.color2).multiplyScalar(invDeltaX);

@@ -1002,7 +1002,7 @@ var CS580GL;
                     color = textureColor.clone();
                     break;
                 case 0 /* Flat */:
-                    color = shadingParams.flatColor;
+                    color = CS580GL.Color.multiply(shadingParams.flatColor, textureColor);
                     break;
                 case 1 /* Gouraud */:
                     mGouraudColor = CS580GL.Color.subtract(shadingParams.color1, shadingParams.color2).multiplyScalar(invDeltaX);
