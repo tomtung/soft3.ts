@@ -1579,6 +1579,28 @@ var CS580GL;
         });
     }
 
+    function mandelbrotTexture(s, t) {
+        var maxNIter = 1000, nIter = 0, ca = s * 3.5 - 2.5, cb = t * 2 - 1, a = 0, b = 0;
+        while (a * a + b * b < 4 * 4 && nIter < maxNIter) {
+            var aTemp = a * a - b * b + ca;
+            b = 2 * a * b + cb;
+            a = aTemp;
+            nIter += 1;
+        }
+        if (nIter >= maxNIter) {
+            return new CS580GL.Color(0, 0, 0);
+        } else {
+            var c = 3 * Math.log(nIter) / Math.log(maxNIter - 1.0);
+            if (c < 1) {
+                return new CS580GL.Color(0, 0, c);
+            } else if (c < 2) {
+                return new CS580GL.Color(0, c - 1, 1);
+            } else {
+                return new CS580GL.Color(c - 2, 1, 1);
+            }
+        }
+    }
+
     function renderHomework5(potData, getParameters, flush) {
         var backgroundPixel = new CS580GL.Pixel().setColor(new CS580GL.Color(249, 249, 249));
         var display = new CS580GL.Display(256, 256);
@@ -1802,7 +1824,8 @@ var CS580GL;
                 case "hw5":
                     canvasElem.height = canvasElem.width = 256;
                     loadImageDataAsync("data/texture.png", function (imageData) {
-                        textureContainer.texture = CS580GL.makeImageTexture(imageData);
+                        //                        textureContainer.texture = CS580GL.makeImageTexture(imageData);
+                        textureContainer.texture = mandelbrotTexture;
                         loadTextFileAsync("data/ppot.asc", function (text) {
                             renderHomework5(text, getParameters, flush);
                         });
