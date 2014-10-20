@@ -335,10 +335,9 @@
     }
 
     // Utility function for loading
-    function loadImageDataAsync(src: string, callback: (ImageData) => any): void {
+    function loadCorsImageDataAsync(src: string, callback: (ImageData) => any): void {
         var canvas = <HTMLCanvasElement> document.createElement("canvas");
-        var image = new Image();
-        image.crossOrigin = "Anonymous";
+        var image = <HTMLImageElement> document.createElement("img");
         image.onload = () => {
             canvas.width = image.width;
             canvas.height = image.height;
@@ -347,7 +346,8 @@
             var imageData = context.getImageData(0, 0, canvas.width, canvas.height);
             callback(imageData);
         };
-        image.src = "data/texture.png";
+        image.crossOrigin = '';
+        image.src = src;
     }
 
     window.onload = () => {
@@ -369,6 +369,10 @@
 
         var shadingControlsElem = <HTMLDivElement> document.getElementById("shading-controls");
         var shadingElem = <HTMLSelectElement> document.getElementById("shading");
+
+        var textureControlsElem = <HTMLDivElement> document.getElementById("texture-controls");
+        var textureImageRadioElem = <HTMLInputElement> document.getElementById("texture-image-radio");
+        var textureProceduralRadioElem = <HTMLInputElement> document.getElementById("texture-procedural-radio");
 
         var textureContainer = {
             texture: CS580GL.allWhiteTexture
@@ -422,7 +426,6 @@
 
         // Utility function for flushing the Display into both the Canvas and a PPM file
         var flush = (display: CS580GL.Display, toImageFile: boolean = false) => {
-            //display.reset(defaultBackgroundPixel); // remove this would be better, but wrong
             display.drawOnCanvas(canvasElem);
 
             if (toImageFile) {
@@ -448,6 +451,12 @@
                 shadingControlsElem.style.visibility = "visible";
             } else {
                 shadingControlsElem.style.visibility = "collapse";
+            }
+
+            if (selectElem.value == "hw5") {
+                textureControlsElem.style.visibility = "visible";
+            } else {
+                textureControlsElem.style.visibility = "collapse";
             }
 
             switch (selectElem.value) {
@@ -481,12 +490,9 @@
 
                 case "hw5":
                     canvasElem.height = canvasElem.width = 256;
-                    loadImageDataAsync("data/texture.png", imageData => {
-//                        textureContainer.texture = CS580GL.makeImageTexture(imageData);
-                        textureContainer.texture = mandelbrotTexture;
-                        loadTextFileAsync("data/ppot.asc", text => {
-                            renderHomework5(text, getParameters, flush);
-                        });
+                    textureImageRadioElem.click();
+                    loadTextFileAsync("data/ppot.asc", text => {
+                        renderHomework5(text, getParameters, flush);
                     });
                     break;
                 default:
@@ -512,5 +518,15 @@
                 hookUpInputOutput(inputElem, outputElem);
             }
         }
+
+        // Hook-up texture control events
+        textureImageRadioElem.onclick = () => {
+            loadCorsImageDataAsync("data/texture.png", imageData => {
+                textureContainer.texture = CS580GL.makeImageTexture(imageData);
+            });
+        };
+        textureProceduralRadioElem.onclick = () => {
+            textureContainer.texture = mandelbrotTexture;
+        };
     };
 })();

@@ -3,6 +3,24 @@
     width: 100%;
     max-width: 1000px;
     text-align: center;
+    position: relative;
+}
+
+#content-root-container {
+    position: relative;
+}
+
+#transform-controls, #shading-controls, #texture-controls {
+    margin: 1em;
+    text-align: left;
+}
+
+#all-controls {
+    margin: 1em;
+    z-index: 10;
+    position: absolute;
+    right: 0;
+    top: 0;
 }
 
 canvas {
@@ -10,4 +28,8 @@ canvas {
     border: 1px solid;
     box-shadow: 10px 10px 5px #888888;
     margin: 2em
+}
+
+span {
+    margin: 0.5em;
 }

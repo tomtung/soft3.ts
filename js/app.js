@@ -1194,6 +1194,8 @@ var CS580GL;
                         CS580GL.Vector3.multiplyScalar(mNormal[2], roundYOffset[1]).add(vNormal(1))
                     ];
                     break;
+                case 3 /* TextureOnly */:
+                    break;
                 default:
                     debugger;
             }
@@ -1678,10 +1680,9 @@ var CS580GL;
     }
 
     // Utility function for loading
-    function loadImageDataAsync(src, callback) {
+    function loadCorsImageDataAsync(src, callback) {
         var canvas = document.createElement("canvas");
-        var image = new Image();
-        image.crossOrigin = "Anonymous";
+        var image = document.createElement("img");
         image.onload = function () {
             canvas.width = image.width;
             canvas.height = image.height;
@@ -1690,7 +1691,8 @@ var CS580GL;
             var imageData = context.getImageData(0, 0, canvas.width, canvas.height);
             callback(imageData);
         };
-        image.src = "data/texture.png";
+        image.crossOrigin = '';
+        image.src = src;
     }
 
     window.onload = function () {
@@ -1712,6 +1714,10 @@ var CS580GL;
 
         var shadingControlsElem = document.getElementById("shading-controls");
         var shadingElem = document.getElementById("shading");
+
+        var textureControlsElem = document.getElementById("texture-controls");
+        var textureImageRadioElem = document.getElementById("texture-image-radio");
+        var textureProceduralRadioElem = document.getElementById("texture-procedural-radio");
 
         var textureContainer = {
             texture: CS580GL.allWhiteTexture
@@ -1766,7 +1772,6 @@ var CS580GL;
         // Utility function for flushing the Display into both the Canvas and a PPM file
         var flush = function (display, toImageFile) {
             if (typeof toImageFile === "undefined") { toImageFile = false; }
-            //display.reset(defaultBackgroundPixel); // remove this would be better, but wrong
             display.drawOnCanvas(canvasElem);
 
             if (toImageFile) {
@@ -1792,6 +1797,12 @@ var CS580GL;
                 shadingControlsElem.style.visibility = "visible";
             } else {
                 shadingControlsElem.style.visibility = "collapse";
+            }
+
+            if (selectElem.value == "hw5") {
+                textureControlsElem.style.visibility = "visible";
+            } else {
+                textureControlsElem.style.visibility = "collapse";
             }
 
             switch (selectElem.value) {
@@ -1825,12 +1836,9 @@ var CS580GL;
 
                 case "hw5":
                     canvasElem.height = canvasElem.width = 256;
-                    loadImageDataAsync("data/texture.png", function (imageData) {
-                        //                        textureContainer.texture = CS580GL.makeImageTexture(imageData);
-                        textureContainer.texture = mandelbrotTexture;
-                        loadTextFileAsync("data/ppot.asc", function (text) {
-                            renderHomework5(text, getParameters, flush);
-                        });
+                    textureImageRadioElem.click();
+                    loadTextFileAsync("data/ppot.asc", function (text) {
+                        renderHomework5(text, getParameters, flush);
                     });
                     break;
                 default:
@@ -1856,6 +1864,16 @@ var CS580GL;
                 hookUpInputOutput(inputElem, outputElem);
             }
         }
+
+        // Hook-up texture control events
+        textureImageRadioElem.onclick = function () {
+            loadCorsImageDataAsync("data/texture.png", function (imageData) {
+                textureContainer.texture = CS580GL.makeImageTexture(imageData);
+            });
+        };
+        textureProceduralRadioElem.onclick = function () {
+            textureContainer.texture = mandelbrotTexture;
+        };
     };
 })();
 //# sourceMappingURL=app.js.map

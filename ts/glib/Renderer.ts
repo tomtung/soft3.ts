@@ -362,6 +362,8 @@ module CS580GL {
                         Vector3.multiplyScalar(mNormal[2], roundYOffset[1]).add(vNormal(1))
                     ];
                     break;
+                case ShadingMode.TextureOnly:
+                    break;
                 default:
                     debugger;
             }
