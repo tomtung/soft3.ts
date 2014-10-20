@@ -221,7 +221,7 @@ module CS580GL {
             return n.dot(l) * 2 * n.z - l.z;
         }
 
-        private shadeByNormal(normal: Vector3, textureColor: Color = new Color(1,1,1)): Color {
+        private shadeByNormal(normal: Vector3, textureColor: Color = new Color(1, 1, 1)): Color {
             var n = normal.clone().normalize();
 
             var diffuse = new Color(0, 0, 0), specular = new Color(0, 0, 0);
