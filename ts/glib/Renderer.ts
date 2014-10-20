@@ -13,7 +13,8 @@ module CS580GL {
     export enum ShadingMode {
         Flat,
         Gouraud,
-        Phong
+        Phong,
+        TextureOnly
     }
 
     export interface IShadingParams {
@@ -162,6 +163,9 @@ module CS580GL {
             textureColor = this.getTextureColorFromScreenSpace(st.x, st.y, z);
 
             switch (this.shading) {
+                case ShadingMode.TextureOnly:
+                    color = textureColor.clone();
+                    break;
                 case ShadingMode.Flat:
                     color = shadingParams.flatColor;
                     break;
@@ -187,6 +191,9 @@ module CS580GL {
                 textureColor = this.getTextureColorFromScreenSpace(st.x, st.y, z).clamp();
 
                 switch (this.shading) {
+                    case ShadingMode.TextureOnly:
+                        color = textureColor.clone();
+                        break;
                     case ShadingMode.Flat:
                         color = Color.multiply(shadingParams.flatColor, textureColor);
                         break;

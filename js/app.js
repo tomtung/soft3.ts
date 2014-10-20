@@ -870,6 +870,7 @@ var CS580GL;
         ShadingMode[ShadingMode["Flat"] = 0] = "Flat";
         ShadingMode[ShadingMode["Gouraud"] = 1] = "Gouraud";
         ShadingMode[ShadingMode["Phong"] = 2] = "Phong";
+        ShadingMode[ShadingMode["TextureOnly"] = 3] = "TextureOnly";
     })(CS580GL.ShadingMode || (CS580GL.ShadingMode = {}));
     var ShadingMode = CS580GL.ShadingMode;
 
@@ -997,6 +998,9 @@ var CS580GL;
             textureColor = this.getTextureColorFromScreenSpace(st.x, st.y, z);
 
             switch (this.shading) {
+                case 3 /* TextureOnly */:
+                    color = textureColor.clone();
+                    break;
                 case 0 /* Flat */:
                     color = shadingParams.flatColor;
                     break;
@@ -1022,6 +1026,9 @@ var CS580GL;
                 textureColor = _this.getTextureColorFromScreenSpace(st.x, st.y, z).clamp();
 
                 switch (_this.shading) {
+                    case 3 /* TextureOnly */:
+                        color = textureColor.clone();
+                        break;
                     case 0 /* Flat */:
                         color = CS580GL.Color.multiply(shadingParams.flatColor, textureColor);
                         break;
@@ -1529,19 +1536,7 @@ var CS580GL;
             }
 
             var oldShading = renderer.shading;
-            switch (parameters.shading) {
-                case "flat":
-                    renderer.shading = 0 /* Flat */;
-                    break;
-                case "gouraud":
-                    renderer.shading = 1 /* Gouraud */;
-                    break;
-                case "phong":
-                    renderer.shading = 2 /* Phong */;
-                    break;
-                default:
-                    debugger;
-            }
+            renderer.shading = parameters.shading;
 
             display.reset(defaultBackgroundPixel);
             applyTransformationParams(renderer, parameters);
@@ -1639,19 +1634,7 @@ var CS580GL;
             }
 
             var oldShading = renderer.shading;
-            switch (parameters.shading) {
-                case "flat":
-                    renderer.shading = 0 /* Flat */;
-                    break;
-                case "gouraud":
-                    renderer.shading = 1 /* Gouraud */;
-                    break;
-                case "phong":
-                    renderer.shading = 2 /* Phong */;
-                    break;
-                default:
-                    debugger;
-            }
+            renderer.shading = parameters.shading;
 
             var oldTexture = renderer.texture;
             renderer.texture = parameters.texture;
@@ -1736,6 +1719,25 @@ var CS580GL;
 
         // Utility function for getting parameters from input elements
         var getParameters = function () {
+            var shading;
+
+            switch (shadingElem.value) {
+                case "texture-only":
+                    shading = 3 /* TextureOnly */;
+                    break;
+                case "flat":
+                    shading = 0 /* Flat */;
+                    break;
+                case "gouraud":
+                    shading = 1 /* Gouraud */;
+                    break;
+                case "phong":
+                    shading = 2 /* Phong */;
+                    break;
+                default:
+                    debugger;
+            }
+
             var params = {
                 translate: {
                     x: parseFloat(translateXElem.value),
@@ -1754,7 +1756,7 @@ var CS580GL;
                 },
                 selection: selectElem.value,
                 rotateCameraY: rotateCameraElem.checked,
-                shading: shadingElem.value,
+                shading: shading,
                 texture: textureContainer.texture
             };
             params.rotateCamera = params.rotateCameraY;

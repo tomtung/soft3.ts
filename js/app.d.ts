@@ -263,6 +263,7 @@ declare module CS580GL {
         Flat = 0,
         Gouraud = 1,
         Phong = 2,
+        TextureOnly = 3,
     }
     interface IShadingParams {
         flatColor?: Color;

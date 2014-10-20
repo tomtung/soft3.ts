@@ -203,19 +203,7 @@
             }
 
             var oldShading = renderer.shading;
-            switch (parameters.shading) {
-                case "flat":
-                    renderer.shading = CS580GL.ShadingMode.Flat;
-                    break;
-                case "gouraud":
-                    renderer.shading = CS580GL.ShadingMode.Gouraud;
-                    break;
-                case "phong":
-                    renderer.shading = CS580GL.ShadingMode.Phong;
-                    break;
-                default:
-                    debugger;
-            }
+            renderer.shading = parameters.shading;
 
             display.reset(defaultBackgroundPixel);
             applyTransformationParams(renderer, parameters);
@@ -309,19 +297,7 @@
             }
 
             var oldShading = renderer.shading;
-            switch (parameters.shading) {
-                case "flat":
-                    renderer.shading = CS580GL.ShadingMode.Flat;
-                    break;
-                case "gouraud":
-                    renderer.shading = CS580GL.ShadingMode.Gouraud;
-                    break;
-                case "phong":
-                    renderer.shading = CS580GL.ShadingMode.Phong;
-                    break;
-                default:
-                    debugger;
-            }
+            renderer.shading = parameters.shading;
 
             var oldTexture = renderer.texture;
             renderer.texture = parameters.texture;
@@ -400,6 +376,25 @@
 
         // Utility function for getting parameters from input elements
         var getParameters = () => {
+            var shading: CS580GL.ShadingMode;
+
+            switch (shadingElem.value) {
+                case "texture-only":
+                    shading = CS580GL.ShadingMode.TextureOnly;
+                    break;
+                case "flat":
+                    shading = CS580GL.ShadingMode.Flat;
+                    break;
+                case "gouraud":
+                    shading = CS580GL.ShadingMode.Gouraud;
+                    break;
+                case "phong":
+                    shading = CS580GL.ShadingMode.Phong;
+                    break;
+                default:
+                    debugger;
+            }
+
             var params: any = {
                 translate: {
                     x: parseFloat(translateXElem.value),
@@ -418,7 +413,7 @@
                 },
                 selection: <string> selectElem.value,
                 rotateCameraY: rotateCameraElem.checked,
-                shading: shadingElem.value,
+                shading: shading,
                 texture: textureContainer.texture
             };
             params.rotateCamera = params.rotateCameraY;
