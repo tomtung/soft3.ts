@@ -155,7 +155,7 @@ module CS580GL {
             mZ = (z1 - z2) * invDeltaX;
             mST = Vector2.subtract(st1, st2).multiplyScalar(invDeltaX);
 
-            x = Math.round(x1); // Note: Use round instead of ceil
+            x = Math.ceil(x1);
             roundXOffset = x - x1;
 
             z = z1 + mZ * roundXOffset;
@@ -212,7 +212,7 @@ module CS580GL {
                 color.clamp();
             };
 
-            for (; x < Math.min(x2, this.display.width - 1); advance()) {
+            for (; x <= Math.min(x2, this.display.width - 1); advance()) {
                 this.renderPixel(x, y, Math.round(z), color);
             }
         }

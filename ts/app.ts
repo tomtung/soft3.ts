@@ -261,7 +261,7 @@
     }
 
     function renderHomework5(potData: string, getParameters: () => any, flush: (display: CS580GL.Display, toImageFile?: boolean) => void): void {
-        var backgroundPixel = new CS580GL.Pixel().setColor(new CS580GL.Color(249, 249, 249));
+        var backgroundPixel = new CS580GL.Pixel().setColor(new CS580GL.Color(0.976, 0.976, 0.976));
         var display = new CS580GL.Display(256, 256);
 
         var renderer = new CS580GL.Renderer(display);
@@ -490,7 +490,6 @@
 
                 case "hw5":
                     canvasElem.height = canvasElem.width = 256;
-                    textureImageRadioElem.click();
                     loadTextFileAsync("data/ppot.asc", text => {
                         renderHomework5(text, getParameters, flush);
                     });
@@ -528,5 +527,6 @@
         textureProceduralRadioElem.onclick = () => {
             textureContainer.texture = mandelbrotTexture;
         };
+        textureImageRadioElem.click();
     };
 })();
