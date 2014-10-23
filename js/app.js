@@ -1587,13 +1587,22 @@ var CS580GL;
         if (nIter >= maxNIter) {
             return new CS580GL.Color(0, 0, 0);
         } else {
-            var c = 3 * Math.log(nIter) / Math.log(maxNIter - 1.0);
-            if (c < 1) {
-                return new CS580GL.Color(0, 0, c);
-            } else if (c < 2) {
-                return new CS580GL.Color(0, c - 1, 1);
-            } else {
-                return new CS580GL.Color(c - 2, 1, 1);
+            var c = 3 * Math.log(nIter) / Math.log(maxNIter);
+            var i = Math.floor(c);
+            var f = c - i;
+            switch (i) {
+                case 0:
+                    return new CS580GL.Color(0, 1, f);
+                    break;
+                case 1:
+                    return new CS580GL.Color(0, 1 - f, 1);
+                    break;
+                case 2:
+                    return new CS580GL.Color(f, 0, 1);
+                    break;
+                default:
+                    return new CS580GL.Color(1, 0, 1);
+                    break;
             }
         }
     }
