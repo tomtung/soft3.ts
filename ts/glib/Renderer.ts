@@ -288,7 +288,17 @@ module CS580GL {
                 Vector2.subtract(vST(1), vST(2)).multiplyScalar(invDeltaY[2])
             ];
 
-            var isMidVertexLeft = isFinite(mX[0]) && (mX[0] < mX[1]);
+            var isMidVertexLeft;
+            if (Math.abs(pos(2).y - pos(0).y) < 1e-7) {
+                isMidVertexLeft = pos(1).x < pos(0).x;
+            } else {
+                isMidVertexLeft = pos(1).x < (
+                    (
+                        (pos(1).y - pos(0).y)*(pos(2).x - pos(0).x) +
+                        (pos(2).y - pos(0).y)*pos(0).x
+                    ) / (pos(2).y - pos(0).y)
+                );
+            }
 
             // Current scan line (x,z) positions on each edge
             var roundYOffset = [
