@@ -903,7 +903,7 @@ var CS580GL;
             var y1 = Math.floor(y);
             var y2 = Math.min(y1 + 1, height - 1);
 
-            return colorAt(x1, y1).multiplyScalar((x2 - x) * (y2 - y)).add(colorAt(x1, y2).multiplyScalar((x2 - x) * (y - y1))).add(colorAt(x2, y1).multiplyScalar((x - x1) * (y2 - y))).add(colorAt(x2, y2).multiplyScalar((x - x1) * (y - y1)));
+            return colorAt(x1, y1).multiplyScalar((x1 + 1 - x) * (y1 + 1 - y)).add(colorAt(x1, y2).multiplyScalar((x1 + 1 - x) * (y - y1))).add(colorAt(x2, y1).multiplyScalar((x - x1) * (y1 + 1 - y))).add(colorAt(x2, y2).multiplyScalar((x - x1) * (y - y1)));
         };
     }
     CS580GL.makeImageTexture = makeImageTexture;
@@ -1614,8 +1614,8 @@ var CS580GL;
         var renderer = new CS580GL.Renderer(display);
         renderer.camera = getDefaultCamera2();
 
-        renderer.ambientCoefficient = 0.1;
-        renderer.diffuseCoefficient = 0.7;
+        renderer.ambientCoefficient = 1;
+        renderer.diffuseCoefficient = 1;
         renderer.specularCoefficient = 0.3;
         renderer.shininess = 32;
         renderer.ambientLight = new CS580GL.Color(0.3, 0.3, 0.3);

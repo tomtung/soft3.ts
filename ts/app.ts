@@ -276,8 +276,8 @@
         var renderer = new CS580GL.Renderer(display);
         renderer.camera = getDefaultCamera2();
 
-        renderer.ambientCoefficient = 0.1;
-        renderer.diffuseCoefficient = 0.7;
+        renderer.ambientCoefficient = 1;
+        renderer.diffuseCoefficient = 1;
         renderer.specularCoefficient = 0.3;
         renderer.shininess = 32;
         renderer.ambientLight = new CS580GL.Color(0.3, 0.3, 0.3);

@@ -59,9 +59,9 @@ module CS580GL {
             var y1 = Math.floor(y);
             var y2 = Math.min(y1 + 1, height - 1);
 
-            return colorAt(x1, y1).multiplyScalar((x2 - x) * (y2 - y)).
-                add(colorAt(x1, y2).multiplyScalar((x2 - x) * (y - y1))).
-                add(colorAt(x2, y1).multiplyScalar((x - x1) * (y2 - y))).
+            return colorAt(x1, y1).multiplyScalar((x1 + 1 - x) * (y1 + 1 - y)).
+                add(colorAt(x1, y2).multiplyScalar((x1 + 1 - x) * (y - y1))).
+                add(colorAt(x2, y1).multiplyScalar((x - x1) * (y1 + 1 - y))).
                 add(colorAt(x2, y2).multiplyScalar((x - x1) * (y - y1)));
         }
     }
