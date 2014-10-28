@@ -259,8 +259,8 @@ module CS580GL {
             // Sort vertices
             var vertices = triangle.toVertexArray().sort((l, r) =>
                     !floatEq(l.position.y, r.position.y) ?
-                        l.position.y - r.position.y :
-                        l.position.x - r.position.x
+                    l.position.y - r.position.y :
+                    l.position.x - r.position.x
             );
             var pos = (i: number) => vertices[i].position;
             var vNormal = (i: number) => vertices[i].normal;
@@ -273,14 +273,14 @@ module CS580GL {
 
             // Compute slopes mX = dx/dy, mY = dz/dy, mST = dST/dy
             var mX = [
-                    invDeltaY[0] * (pos(0).x - pos(1).x),
-                    invDeltaY[1] * (pos(0).x - pos(2).x),
-                    invDeltaY[2] * (pos(1).x - pos(2).x)
+                invDeltaY[0] * (pos(0).x - pos(1).x),
+                invDeltaY[1] * (pos(0).x - pos(2).x),
+                invDeltaY[2] * (pos(1).x - pos(2).x)
             ];
             var mZ = [
-                    invDeltaY[0] * (pos(0).z - pos(1).z),
-                    invDeltaY[1] * (pos(0).z - pos(2).z),
-                    invDeltaY[2] * (pos(1).z - pos(2).z)
+                invDeltaY[0] * (pos(0).z - pos(1).z),
+                invDeltaY[1] * (pos(0).z - pos(2).z),
+                invDeltaY[2] * (pos(1).z - pos(2).z)
             ];
             var mST = [
                 Vector2.subtract(vST(0), vST(1)).multiplyScalar(invDeltaY[0]),
@@ -292,18 +292,18 @@ module CS580GL {
 
             // Current scan line (x,z) positions on each edge
             var roundYOffset = [
-                    Math.ceil(pos(0).y) - pos(0).y,
-                    Math.ceil(pos(1).y) - pos(1).y
+                Math.ceil(pos(0).y) - pos(0).y,
+                Math.ceil(pos(1).y) - pos(1).y
             ];
             var x = [
-                    pos(0).x + mX[0] * roundYOffset[0],
-                    pos(0).x + mX[1] * roundYOffset[0],
-                    pos(1).x + mX[2] * roundYOffset[1]
+                pos(0).x + mX[0] * roundYOffset[0],
+                pos(0).x + mX[1] * roundYOffset[0],
+                pos(1).x + mX[2] * roundYOffset[1]
             ];
             var z = [
-                    pos(0).z + mZ[0] * roundYOffset[0],
-                    pos(0).z + mZ[1] * roundYOffset[0],
-                    pos(1).z + mZ[2] * roundYOffset[1]
+                pos(0).z + mZ[0] * roundYOffset[0],
+                pos(0).z + mZ[1] * roundYOffset[0],
+                pos(1).z + mZ[2] * roundYOffset[1]
             ];
             var st: Vector2[] = [
                 Vector2.multiplyScalar(mST[0], roundYOffset[0]).add(vST(0)),

@@ -4,14 +4,14 @@ module CS580GL {
     /** A Color object represents a color. */
     export class Color {
         constructor(//
-                    /** Red channel value between 0 and 1. Default is 1. */
-                    public red: number = 1, //
-                    //
-                    /** Green channel value between 0 and 1. Default is 1. */
-                    public green: number = 1,//
-                    //
-                    /** Blue channel value between 0 and 1. Default is 1. */
-                    public blue: number = 1) {
+        /** Red channel value between 0 and 1. Default is 1. */
+        public red: number = 1, //
+        //
+        /** Green channel value between 0 and 1. Default is 1. */
+        public green: number = 1,//
+        //
+        /** Blue channel value between 0 and 1. Default is 1. */
+        public blue: number = 1) {
         }
 
 

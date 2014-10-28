@@ -10,7 +10,7 @@
 
         var scaleRgb = (value: number) =>
             Math.round(
-                    CS580GL.clamp(value, 0, 4095) / 4095 * 255
+                CS580GL.clamp(value, 0, 4095) / 4095 * 255
             );
 
         var renderRectangle = (dataLine: string) => {

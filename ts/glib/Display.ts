@@ -71,7 +71,7 @@ module CS580GL {
                 }
             }
 
-            return new Blob([result], { type: 'image/x-portable-anymap' });
+            return new Blob([result], {type: 'image/x-portable-anymap'});
         }
     }
 } 

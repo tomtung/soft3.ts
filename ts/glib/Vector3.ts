@@ -67,9 +67,9 @@ module CS580GL {
 
         cross(other: Vector3): Vector3 {
             return this.setXYZ(
-                    this.y * other.z - this.z * other.y,
-                    this.z * other.x - this.x * other.z,
-                    this.x * other.y - this.y * other.x
+                this.y * other.z - this.z * other.y,
+                this.z * other.x - this.x * other.z,
+                this.x * other.y - this.y * other.x
             );
         }
 
@@ -111,9 +111,9 @@ module CS580GL {
             var e = matrix.elements;
             var wInv = 1 / (e[12] * this.x + e[13] * this.y + e[14] * this.z + e[15]);
             return this.setXYZ(
-                    wInv * (e[0] * this.x + e[1] * this.y + e[2] * this.z + e[3]),
-                    wInv * (e[4] * this.x + e[5] * this.y + e[6] * this.z + e[7]),
-                    wInv * (e[8] * this.x + e[9] * this.y + e[10] * this.z + e[11])
+                wInv * (e[0] * this.x + e[1] * this.y + e[2] * this.z + e[3]),
+                wInv * (e[4] * this.x + e[5] * this.y + e[6] * this.z + e[7]),
+                wInv * (e[8] * this.x + e[9] * this.y + e[10] * this.z + e[11])
             );
         }
 
@@ -124,9 +124,9 @@ module CS580GL {
         transformDirection(matrix: Matrix4): Vector3 {
             var e = matrix.elements;
             return this.setXYZ(
-                    e[0] * this.x + e[1] * this.y + e[2] * this.z,
-                    e[4] * this.x + e[5] * this.y + e[6] * this.z,
-                    e[8] * this.x + e[9] * this.y + e[10] * this.z
+                e[0] * this.x + e[1] * this.y + e[2] * this.z,
+                e[4] * this.x + e[5] * this.y + e[6] * this.z,
+                e[8] * this.x + e[9] * this.y + e[10] * this.z
             ).normalize();
         }
 
