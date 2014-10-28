@@ -159,7 +159,7 @@ module CS580GL {
             roundXOffset = x - x1;
 
             z = z1 + mZ * roundXOffset;
-            st = st1.clone();
+            st = Vector2.multiplyScalar(mST, roundXOffset).add(st1);
             textureColor = this.getTextureColorFromScreenSpace(st.x, st.y, z);
 
             switch (this.shading) {
