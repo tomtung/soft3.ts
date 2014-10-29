@@ -294,6 +294,7 @@ declare module CS580GL {
         public specularCoefficient: number;
         public shininess: number;
         public texture: ITexture;
+        public antiAliasShift: Vector2;
         constructor(display: Display);
         /** Update the to-screen transformation matrix. Must be invoked if  display is changed. */
         public updateToScreenTransformation(): Renderer;

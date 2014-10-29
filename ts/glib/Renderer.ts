@@ -82,6 +82,7 @@ module CS580GL {
         specularCoefficient: number = 0.0;
         shininess: number = 0.0;
         texture: ITexture = allWhiteTexture;
+        antiAliasShift: Vector2 = new Vector2(0, 0);
 
         constructor(public display: Display) {
             this.updateToScreenTransformation();
@@ -262,6 +263,10 @@ module CS580GL {
                     l.position.y - r.position.y :
                     l.position.x - r.position.x
             );
+            vertices.forEach(v => {
+                v.position.x += this.antiAliasShift.x;
+                v.position.y += this.antiAliasShift.y;
+            });
             var pos = (i: number) => vertices[i].position;
             var vNormal = (i: number) => vertices[i].normal;
             var vST = (i: number) => vertices[i].textureCoordinate;

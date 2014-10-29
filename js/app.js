@@ -924,6 +924,7 @@ var CS580GL;
             this.specularCoefficient = 0.0;
             this.shininess = 0.0;
             this.texture = CS580GL.allWhiteTexture;
+            this.antiAliasShift = new CS580GL.Vector2(0, 0);
             this.updateToScreenTransformation();
         }
         /** Update the to-screen transformation matrix. Must be invoked if  display is changed. */
@@ -1089,6 +1090,10 @@ var CS580GL;
             // Sort vertices
             var vertices = triangle.toVertexArray().sort(function (l, r) {
                 return !CS580GL.floatEq(l.position.y, r.position.y) ? l.position.y - r.position.y : l.position.x - r.position.x;
+            });
+            vertices.forEach(function (v) {
+                v.position.x += _this.antiAliasShift.x;
+                v.position.y += _this.antiAliasShift.y;
             });
             var pos = function (i) {
                 return vertices[i].position;
