@@ -149,9 +149,7 @@
             display.reset(defaultBackgroundPixel);
             applyTransformationParams(renderer, parameters);
 
-            for (var i = 0; i < triangles.length; i += 1) {
-                renderer.renderTriangle(triangles[i]);
-            }
+            renderer.renderTriangles(triangles);
 
             flush(display, toImageFile);
 
@@ -208,9 +206,7 @@
             display.reset(defaultBackgroundPixel);
             applyTransformationParams(renderer, parameters);
 
-            for (var i = 0; i < triangles.length; i += 1) {
-                renderer.renderTriangle(triangles[i]);
-            }
+            renderer.renderTriangles(triangles);
 
             flush(display, toImageFile);
 
@@ -314,9 +310,7 @@
             display.reset(backgroundPixel);
             applyTransformationParams(renderer, parameters);
 
-            for (var i = 0; i < triangles.length; i += 1) {
-                renderer.renderTriangle(triangles[i]);
-            }
+            renderer.renderTriangles(triangles);
 
             flush(display, toImageFile);
 

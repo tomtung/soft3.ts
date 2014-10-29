@@ -307,5 +307,6 @@ declare module CS580GL {
         public renderScreenTriangle(triangle: MeshTriangle): Renderer;
         private getTransformedVertex(vertex);
         public renderTriangle(triangle: MeshTriangle): Renderer;
+        public renderTriangles(triangles: MeshTriangle[]): Renderer;
     }
 }

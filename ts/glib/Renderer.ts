@@ -503,5 +503,12 @@ module CS580GL {
             this.renderScreenTriangle(screenTriangle);
             return this;
         }
+
+        renderTriangles(triangles: MeshTriangle[]): Renderer {
+            for (var i = 0; i < triangles.length; i += 1) {
+                this.renderTriangle(triangles[i]);
+            }
+            return this;
+        }
     }
 }

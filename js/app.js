@@ -1326,6 +1326,13 @@ var CS580GL;
             this.renderScreenTriangle(screenTriangle);
             return this;
         };
+
+        Renderer.prototype.renderTriangles = function (triangles) {
+            for (var i = 0; i < triangles.length; i += 1) {
+                this.renderTriangle(triangles[i]);
+            }
+            return this;
+        };
         return Renderer;
     })();
     CS580GL.Renderer = Renderer;
@@ -1483,9 +1490,7 @@ var CS580GL;
             display.reset(defaultBackgroundPixel);
             applyTransformationParams(renderer, parameters);
 
-            for (var i = 0; i < triangles.length; i += 1) {
-                renderer.renderTriangle(triangles[i]);
-            }
+            renderer.renderTriangles(triangles);
 
             flush(display, toImageFile);
 
@@ -1548,9 +1553,7 @@ var CS580GL;
             display.reset(defaultBackgroundPixel);
             applyTransformationParams(renderer, parameters);
 
-            for (var i = 0; i < triangles.length; i += 1) {
-                renderer.renderTriangle(triangles[i]);
-            }
+            renderer.renderTriangles(triangles);
 
             flush(display, toImageFile);
 
@@ -1658,9 +1661,7 @@ var CS580GL;
             display.reset(backgroundPixel);
             applyTransformationParams(renderer, parameters);
 
-            for (var i = 0; i < triangles.length; i += 1) {
-                renderer.renderTriangle(triangles[i]);
-            }
+            renderer.renderTriangles(triangles);
 
             flush(display, toImageFile);
 
