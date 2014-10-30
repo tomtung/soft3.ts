@@ -1,4 +1,4 @@
-﻿module CS580GL {
+﻿module SOFT3 {
     /** A 4x4 Matrix */
     export class Matrix4 {
         /** A row-major array of matrix elements */

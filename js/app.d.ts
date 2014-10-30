@@ -1,10 +1,10 @@
-﻿declare module CS580GL {
+﻿declare module SOFT3 {
     /** A simple utility function for clamping numbers */
     function clamp(num: number, min: number, max: number): number;
     function applyMixins(derivedConstructor: any, baseConstructors: any[]): void;
     function floatEq(x: number, y: number): boolean;
 }
-declare module CS580GL {
+declare module SOFT3 {
     /** A Color object represents a color. */
     class Color {
         /** Red channel value between 0 and 1. Default is 1. */
@@ -45,7 +45,7 @@ declare module CS580GL {
         static subtract(c1: Color, c2: Color): Color;
     }
 }
-declare module CS580GL {
+declare module SOFT3 {
     /** A Pixel object represents a pixel with RGBA color and depth information. */
     class Pixel {
         public redUint8: number;
@@ -63,7 +63,7 @@ declare module CS580GL {
         public setColor(color: Color): Pixel;
     }
 }
-declare module CS580GL {
+declare module SOFT3 {
     /** A PixelRef object is a reference to a pixel in a Display object. */
     class PixelRef implements Pixel {
         public display: Display;
@@ -87,7 +87,7 @@ declare module CS580GL {
         public setColor: (Color: any) => Pixel;
     }
 }
-declare module CS580GL {
+declare module SOFT3 {
     /**
     * A Display object represents a frame buffer,
     * which contains an array of 32-bit RGBA pixel values and a 32-bit depth value for each pixel.
@@ -112,7 +112,7 @@ declare module CS580GL {
         public toNetpbm(): Blob;
     }
 }
-declare module CS580GL {
+declare module SOFT3 {
     /** A 4x4 Matrix */
     class Matrix4 {
         /** A row-major array of matrix elements */
@@ -144,7 +144,7 @@ declare module CS580GL {
         static makeRotationZ(theta: number): Matrix4;
     }
 }
-declare module CS580GL {
+declare module SOFT3 {
     /** A Vector3 object represents a 3-D Vector */
     class Vector3 {
         public x: number;
@@ -185,7 +185,7 @@ declare module CS580GL {
         public clone(): Vector3;
     }
 }
-declare module CS580GL {
+declare module SOFT3 {
     interface ICameraParameters {
         position: Vector3;
         lookAtTarget: Vector3;
@@ -216,7 +216,7 @@ declare module CS580GL {
         public updatePerspectiveMatrix(): Camera;
     }
 }
-declare module CS580GL {
+declare module SOFT3 {
     /** A Vector2 object represents a 2-D Vector */
     class Vector2 {
         public x: number;
@@ -235,7 +235,7 @@ declare module CS580GL {
         static subtract(v1: Vector2, v2: Vector2): Vector2;
     }
 }
-declare module CS580GL {
+declare module SOFT3 {
     /**
     * A MeshVertex object represents a vertex,
     * including its position, normal, and texture mapping coordinate values
@@ -254,7 +254,7 @@ declare module CS580GL {
         public toVertexArray(): IMeshVertex[];
     }
 }
-declare module CS580GL {
+declare module SOFT3 {
     interface IDirectionalLight {
         direction: Vector3;
         color: Color;

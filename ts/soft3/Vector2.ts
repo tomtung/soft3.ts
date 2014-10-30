@@ -1,4 +1,4 @@
-﻿module CS580GL {
+﻿module SOFT3 {
     /** A Vector2 object represents a 2-D Vector */
     export class Vector2 {
         constructor(public x: number = 0, public y: number = 0) {

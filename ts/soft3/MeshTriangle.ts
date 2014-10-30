@@ -2,7 +2,7 @@
 /// <reference path="Vector3.ts" />
 /// <reference path="Color.ts" />
 
-module CS580GL {
+module SOFT3 {
     /**
      * A MeshVertex object represents a vertex,
      * including its position, normal, and texture mapping coordinate values

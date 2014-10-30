@@ -1,6 +1,6 @@
 /// <reference path="Color.ts" />
 
-module CS580GL {
+module SOFT3 {
     /** A Pixel object represents a pixel with RGBA color and depth information. */
     export class Pixel {
         redUint8: number;

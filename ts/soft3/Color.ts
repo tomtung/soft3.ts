@@ -1,6 +1,6 @@
 /// <reference path="utils.ts" />
 
-module CS580GL {
+module SOFT3 {
     /** A Color object represents a color. */
     export class Color {
         constructor(//

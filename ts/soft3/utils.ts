@@ -1,4 +1,4 @@
-﻿module CS580GL {
+﻿module SOFT3 {
     /** A simple utility function for clamping numbers */
     export function clamp(num: number, min: number, max: number): number {
         if (num < min) {

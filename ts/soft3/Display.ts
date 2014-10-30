@@ -1,6 +1,6 @@
 ﻿/// <reference path="PixelRef.ts" />
 
-module CS580GL {
+module SOFT3 {
     /**
      * A Display object represents a frame buffer,
      * which contains an array of 32-bit RGBA pixel values and a 32-bit depth value for each pixel.

@@ -3,7 +3,7 @@
 /// <reference path="MeshTriangle.ts" />
 /// <reference path="utils.ts" />
 
-module CS580GL {
+module SOFT3 {
 
     export interface IDirectionalLight {
         direction: Vector3

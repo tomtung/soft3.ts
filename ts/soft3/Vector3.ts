@@ -1,6 +1,6 @@
 ﻿/// <reference path="Matrix4.ts" />
 
-module CS580GL {
+module SOFT3 {
     /** A Vector3 object represents a 3-D Vector */
     export class Vector3 {
         constructor(public x: number = 0, public y: number = 0, public z: number = 0) {
@@ -143,7 +143,7 @@ module CS580GL {
         }
 
         clone(): Vector3 {
-            return new CS580GL.Vector3(this.x, this.y, this.z);
+            return new SOFT3.Vector3(this.x, this.y, this.z);
         }
     }
 }

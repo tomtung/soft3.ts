@@ -1,7 +1,7 @@
 ﻿/// <reference path="Vector3.ts" />
 /// <reference path="Matrix4.ts" />
 
-module CS580GL {
+module SOFT3 {
     export interface ICameraParameters {
         position: Vector3;
         lookAtTarget: Vector3;

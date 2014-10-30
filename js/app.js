@@ -1,5 +1,5 @@
-﻿var CS580GL;
-(function (CS580GL) {
+﻿var SOFT3;
+(function (SOFT3) {
     /** A simple utility function for clamping numbers */
     function clamp(num, min, max) {
         if (num < min) {
@@ -10,7 +10,7 @@
             return num;
         }
     }
-    CS580GL.clamp = clamp;
+    SOFT3.clamp = clamp;
 
     function applyMixins(derivedConstructor, baseConstructors) {
         baseConstructors.forEach(function (baseConstructor) {
@@ -19,16 +19,16 @@
             });
         });
     }
-    CS580GL.applyMixins = applyMixins;
+    SOFT3.applyMixins = applyMixins;
 
     function floatEq(x, y) {
         return Math.abs(x - y) < 1e-6;
     }
-    CS580GL.floatEq = floatEq;
-})(CS580GL || (CS580GL = {}));
+    SOFT3.floatEq = floatEq;
+})(SOFT3 || (SOFT3 = {}));
 /// <reference path="utils.ts" />
-var CS580GL;
-(function (CS580GL) {
+var SOFT3;
+(function (SOFT3) {
     /** A Color object represents a color. */
     var Color = (function () {
         function Color(/** Red channel value between 0 and 1. Default is 1. */
@@ -67,7 +67,7 @@ var CS580GL;
         };
 
         Color.channelValueToUint8 = function (value) {
-            return Math.round(CS580GL.clamp(value * 255, 0, 255));
+            return Math.round(SOFT3.clamp(value * 255, 0, 255));
         };
 
         Color.prototype.setRed = function (value) {
@@ -168,9 +168,9 @@ var CS580GL;
         };
 
         Color.prototype.clamp = function () {
-            this.red = CS580GL.clamp(this.red, 0, 1);
-            this.green = CS580GL.clamp(this.green, 0, 1);
-            this.blue = CS580GL.clamp(this.blue, 0, 1);
+            this.red = SOFT3.clamp(this.red, 0, 1);
+            this.green = SOFT3.clamp(this.green, 0, 1);
+            this.blue = SOFT3.clamp(this.blue, 0, 1);
             return this;
         };
 
@@ -201,11 +201,11 @@ var CS580GL;
         };
         return Color;
     })();
-    CS580GL.Color = Color;
-})(CS580GL || (CS580GL = {}));
+    SOFT3.Color = Color;
+})(SOFT3 || (SOFT3 = {}));
 /// <reference path="Color.ts" />
-var CS580GL;
-(function (CS580GL) {
+var SOFT3;
+(function (SOFT3) {
     /** A Pixel object represents a pixel with RGBA color and depth information. */
     var Pixel = (function () {
         function Pixel(pixelValue) {
@@ -259,13 +259,13 @@ var CS580GL;
         };
         return Pixel;
     })();
-    CS580GL.Pixel = Pixel;
-})(CS580GL || (CS580GL = {}));
+    SOFT3.Pixel = Pixel;
+})(SOFT3 || (SOFT3 = {}));
 /// <reference path="Pixel.ts" />
 /// <reference path="Display.ts" />
 /// <reference path="utils.ts" />
-var CS580GL;
-(function (CS580GL) {
+var SOFT3;
+(function (SOFT3) {
     /** A PixelRef object is a reference to a pixel in a Display object. */
     var PixelRef = (function () {
         function PixelRef(display, x, y) {
@@ -341,13 +341,13 @@ var CS580GL;
 
         return PixelRef;
     })();
-    CS580GL.PixelRef = PixelRef;
+    SOFT3.PixelRef = PixelRef;
 
-    CS580GL.applyMixins(PixelRef, [CS580GL.Pixel]);
-})(CS580GL || (CS580GL = {}));
+    SOFT3.applyMixins(PixelRef, [SOFT3.Pixel]);
+})(SOFT3 || (SOFT3 = {}));
 /// <reference path="PixelRef.ts" />
-var CS580GL;
-(function (CS580GL) {
+var SOFT3;
+(function (SOFT3) {
     /**
     * A Display object represents a frame buffer,
     * which contains an array of 32-bit RGBA pixel values and a 32-bit depth value for each pixel.
@@ -368,12 +368,12 @@ var CS580GL;
         }
         /** Returns a reference to the pixel at the position specified by x and y */
         Display.prototype.pixelAt = function (x, y) {
-            return new CS580GL.PixelRef(this, x, y);
+            return new SOFT3.PixelRef(this, x, y);
         };
 
         /** Reset the entire frame buffer with the (optional) given pixel value */
         Display.prototype.reset = function (pixel) {
-            if (typeof pixel === "undefined") { pixel = new CS580GL.Pixel({
+            if (typeof pixel === "undefined") { pixel = new SOFT3.Pixel({
                 redUint8: 0,
                 greenUint8: 0,
                 blueUint8: 0,
@@ -422,10 +422,10 @@ var CS580GL;
         Display.Z_MAX = 0x7fffffff;
         return Display;
     })();
-    CS580GL.Display = Display;
-})(CS580GL || (CS580GL = {}));
-var CS580GL;
-(function (CS580GL) {
+    SOFT3.Display = Display;
+})(SOFT3 || (SOFT3 = {}));
+var SOFT3;
+(function (SOFT3) {
     /** A 4x4 Matrix */
     var Matrix4 = (function () {
         /** Construct a 4x4 matrix from a row-major array of numbers */
@@ -559,11 +559,11 @@ var CS580GL;
         };
         return Matrix4;
     })();
-    CS580GL.Matrix4 = Matrix4;
-})(CS580GL || (CS580GL = {}));
+    SOFT3.Matrix4 = Matrix4;
+})(SOFT3 || (SOFT3 = {}));
 /// <reference path="Matrix4.ts" />
-var CS580GL;
-(function (CS580GL) {
+var SOFT3;
+(function (SOFT3) {
     /** A Vector3 object represents a 3-D Vector */
     var Vector3 = (function () {
         function Vector3(x, y, z) {
@@ -699,23 +699,23 @@ var CS580GL;
         };
 
         Vector3.prototype.clone = function () {
-            return new CS580GL.Vector3(this.x, this.y, this.z);
+            return new SOFT3.Vector3(this.x, this.y, this.z);
         };
         return Vector3;
     })();
-    CS580GL.Vector3 = Vector3;
-})(CS580GL || (CS580GL = {}));
+    SOFT3.Vector3 = Vector3;
+})(SOFT3 || (SOFT3 = {}));
 /// <reference path="Vector3.ts" />
 /// <reference path="Matrix4.ts" />
-var CS580GL;
-(function (CS580GL) {
+var SOFT3;
+(function (SOFT3) {
     /** A camera with perspective projection. The aspect ratio is always assumed to be 1. */
     var Camera = (function () {
         function Camera(parameters) {
             /** The look-at matrix, which does both translation and rotation. */
-            this.lookAtMatrix = CS580GL.Matrix4.zeros();
+            this.lookAtMatrix = SOFT3.Matrix4.zeros();
             /** The perspective matrix. Note that z will be scaled into range [0, 1] */
-            this.perspectiveMatrix = CS580GL.Matrix4.zeros();
+            this.perspectiveMatrix = SOFT3.Matrix4.zeros();
             this.position = parameters.position;
             this.lookAtTarget = parameters.lookAtTarget;
             this.up = parameters.up;
@@ -727,27 +727,27 @@ var CS580GL;
         * Must be invoked if camera position, look-at target, or up vector is changed.
         */
         Camera.prototype.updateLookAtMatrix = function () {
-            var w = CS580GL.Vector3.subtract(this.position, this.lookAtTarget).normalize();
+            var w = SOFT3.Vector3.subtract(this.position, this.lookAtTarget).normalize();
 
             // Edge case handling code borrowed from three.js
             if (w.length() == 0) {
                 w.z = 1;
             }
 
-            var u = CS580GL.Vector3.cross(this.up, w).normalize();
+            var u = SOFT3.Vector3.cross(this.up, w).normalize();
 
             // Edge case handling code also borrowed from three.js
             if (Math.abs(u.length()) < 1e-5) {
                 w.x += 1e-4;
-                u = CS580GL.Vector3.cross(this.up, w).normalize();
+                u = SOFT3.Vector3.cross(this.up, w).normalize();
             }
 
-            var v = CS580GL.Vector3.cross(w, u);
+            var v = SOFT3.Vector3.cross(w, u);
 
-            this.lookAtMatrix = new CS580GL.Matrix4([
-                u.x, u.y, u.z, -CS580GL.Vector3.dot(u, this.position),
-                v.x, v.y, v.z, -CS580GL.Vector3.dot(v, this.position),
-                w.x, w.y, w.z, -CS580GL.Vector3.dot(w, this.position),
+            this.lookAtMatrix = new SOFT3.Matrix4([
+                u.x, u.y, u.z, -SOFT3.Vector3.dot(u, this.position),
+                v.x, v.y, v.z, -SOFT3.Vector3.dot(v, this.position),
+                w.x, w.y, w.z, -SOFT3.Vector3.dot(w, this.position),
                 0, 0, 0, 1
             ]);
 
@@ -757,7 +757,7 @@ var CS580GL;
         /** Update the perspective matrix. Must be invoked if fov is changed. */
         Camera.prototype.updatePerspectiveMatrix = function () {
             var dInv = Math.tan(this.fov / 2);
-            this.perspectiveMatrix = new CS580GL.Matrix4([
+            this.perspectiveMatrix = new SOFT3.Matrix4([
                 1, 0, 0, 0,
                 0, 1, 0, 0,
                 0, 0, dInv, 0,
@@ -768,10 +768,10 @@ var CS580GL;
         };
         return Camera;
     })();
-    CS580GL.Camera = Camera;
-})(CS580GL || (CS580GL = {}));
-var CS580GL;
-(function (CS580GL) {
+    SOFT3.Camera = Camera;
+})(SOFT3 || (SOFT3 = {}));
+var SOFT3;
+(function (SOFT3) {
     /** A Vector2 object represents a 2-D Vector */
     var Vector2 = (function () {
         function Vector2(x, y) {
@@ -837,13 +837,13 @@ var CS580GL;
         };
         return Vector2;
     })();
-    CS580GL.Vector2 = Vector2;
-})(CS580GL || (CS580GL = {}));
+    SOFT3.Vector2 = Vector2;
+})(SOFT3 || (SOFT3 = {}));
 /// <reference path="Vector2.ts" />
 /// <reference path="Vector3.ts" />
 /// <reference path="Color.ts" />
-var CS580GL;
-(function (CS580GL) {
+var SOFT3;
+(function (SOFT3) {
     
 
     /** A TriangleFace object represents a triangle face in a triangle mesh */
@@ -858,24 +858,24 @@ var CS580GL;
         };
         return MeshTriangle;
     })();
-    CS580GL.MeshTriangle = MeshTriangle;
-})(CS580GL || (CS580GL = {}));
+    SOFT3.MeshTriangle = MeshTriangle;
+})(SOFT3 || (SOFT3 = {}));
 /// <reference path="Display.ts" />
 /// <reference path="Camera.ts" />
 /// <reference path="MeshTriangle.ts" />
 /// <reference path="utils.ts" />
-var CS580GL;
-(function (CS580GL) {
+var SOFT3;
+(function (SOFT3) {
     (function (ShadingMode) {
         ShadingMode[ShadingMode["Flat"] = 0] = "Flat";
         ShadingMode[ShadingMode["Gouraud"] = 1] = "Gouraud";
         ShadingMode[ShadingMode["Phong"] = 2] = "Phong";
         ShadingMode[ShadingMode["TextureOnly"] = 3] = "TextureOnly";
-    })(CS580GL.ShadingMode || (CS580GL.ShadingMode = {}));
-    var ShadingMode = CS580GL.ShadingMode;
+    })(SOFT3.ShadingMode || (SOFT3.ShadingMode = {}));
+    var ShadingMode = SOFT3.ShadingMode;
 
-    CS580GL.allWhiteTexture = function (s, t) {
-        return new CS580GL.Color(1, 1, 1);
+    SOFT3.allWhiteTexture = function (s, t) {
+        return new SOFT3.Color(1, 1, 1);
     };
 
     function makeImageTexture(image) {
@@ -888,12 +888,12 @@ var CS580GL;
             var gIndex = rIndex + 1;
             var bIndex = gIndex + 1;
 
-            return CS580GL.Color.fromRGBUint8(data[rIndex], data[gIndex], data[bIndex]);
+            return SOFT3.Color.fromRGBUint8(data[rIndex], data[gIndex], data[bIndex]);
         };
 
         return function (s, t) {
-            s = CS580GL.clamp(s, 0, 1);
-            t = CS580GL.clamp(t, 0, 1);
+            s = SOFT3.clamp(s, 0, 1);
+            t = SOFT3.clamp(t, 0, 1);
 
             var x = (width - 1) * s;
             var y = (height - 1) * t;
@@ -906,7 +906,7 @@ var CS580GL;
             return colorAt(x1, y1).multiplyScalar((x1 + 1 - x) * (y1 + 1 - y)).add(colorAt(x1, y2).multiplyScalar((x1 + 1 - x) * (y - y1))).add(colorAt(x2, y1).multiplyScalar((x - x1) * (y1 + 1 - y))).add(colorAt(x2, y2).multiplyScalar((x - x1) * (y - y1)));
         };
     }
-    CS580GL.makeImageTexture = makeImageTexture;
+    SOFT3.makeImageTexture = makeImageTexture;
 
     /** Render objects constructor */
     var Renderer = (function () {
@@ -914,24 +914,24 @@ var CS580GL;
             this.display = display;
             this.toWorldTransformationStack = [];
             this.normalTransformationStack = [];
-            this.accumulatedTransformation = CS580GL.Matrix4.identity();
-            this.accumulatedNormalTransformation = CS580GL.Matrix4.identity();
+            this.accumulatedTransformation = SOFT3.Matrix4.identity();
+            this.accumulatedNormalTransformation = SOFT3.Matrix4.identity();
             this.shading = 0 /* Flat */;
-            this.ambientLight = new CS580GL.Color(0.0, 0.0, 0.0);
+            this.ambientLight = new SOFT3.Color(0.0, 0.0, 0.0);
             this.ambientCoefficient = 1.0;
             this.directionalLights = [];
             this.diffuseCoefficient = 1.0;
             this.specularCoefficient = 0.0;
             this.shininess = 0.0;
-            this.texture = CS580GL.allWhiteTexture;
-            this.antiAliasShift = new CS580GL.Vector2(0, 0);
+            this.texture = SOFT3.allWhiteTexture;
+            this.antiAliasShift = new SOFT3.Vector2(0, 0);
             this.antiAliasFilter = [
-                { delta: new CS580GL.Vector2(-0.52, 0.38), weight: 0.128 },
-                { delta: new CS580GL.Vector2(0.41, 0.56), weight: 0.119 },
-                { delta: new CS580GL.Vector2(0.27, 0.08), weight: 0.294 },
-                { delta: new CS580GL.Vector2(-0.17, -0.29), weight: 0.249 },
-                { delta: new CS580GL.Vector2(0.58, -0.55), weight: 0.104 },
-                { delta: new CS580GL.Vector2(-0.31, -0.71), weight: 0.106 }
+                { delta: new SOFT3.Vector2(-0.52, 0.38), weight: 0.128 },
+                { delta: new SOFT3.Vector2(0.41, 0.56), weight: 0.119 },
+                { delta: new SOFT3.Vector2(0.27, 0.08), weight: 0.294 },
+                { delta: new SOFT3.Vector2(-0.17, -0.29), weight: 0.249 },
+                { delta: new SOFT3.Vector2(0.58, -0.55), weight: 0.104 },
+                { delta: new SOFT3.Vector2(-0.31, -0.71), weight: 0.106 }
             ];
             this.antiAliasSubRenderers = null;
             this.updateToScreenTransformation();
@@ -940,10 +940,10 @@ var CS580GL;
         Renderer.prototype.updateToScreenTransformation = function () {
             var halfX = this.display.width / 2;
             var halfY = this.display.height / 2;
-            this.toScreenTransformation = new CS580GL.Matrix4([
+            this.toScreenTransformation = new SOFT3.Matrix4([
                 halfX, 0, 0, halfX,
                 0, -halfY, 0, halfY,
-                0, 0, -CS580GL.Display.Z_MAX, 0,
+                0, 0, -SOFT3.Display.Z_MAX, 0,
                 0, 0, 0, 1
             ]);
             return this;
@@ -953,7 +953,7 @@ var CS580GL;
         Renderer.prototype.updateAccumulatedTransformation = function () {
             var _this = this;
             if (!this.camera) {
-                this.accumulatedTransformation = CS580GL.Matrix4.identity();
+                this.accumulatedTransformation = SOFT3.Matrix4.identity();
             } else {
                 this.accumulatedTransformation.copyFrom(this.toScreenTransformation).multiply(this.camera.perspectiveMatrix).multiply(this.camera.lookAtMatrix);
                 this.toWorldTransformationStack.forEach(function (m) {
@@ -981,7 +981,7 @@ var CS580GL;
         };
 
         Renderer.prototype.getTextureColorFromScreenSpace = function (sScreen, tScreen, zScreen) {
-            var coeff = zScreen / (CS580GL.Display.Z_MAX - zScreen) + 1;
+            var coeff = zScreen / (SOFT3.Display.Z_MAX - zScreen) + 1;
             var s = sScreen * coeff;
             var t = tScreen * coeff;
 
@@ -998,13 +998,13 @@ var CS580GL;
 
             invDeltaX = 1 / (x1 - x2);
             mZ = (z1 - z2) * invDeltaX;
-            mST = CS580GL.Vector2.subtract(st1, st2).multiplyScalar(invDeltaX);
+            mST = SOFT3.Vector2.subtract(st1, st2).multiplyScalar(invDeltaX);
 
             x = Math.ceil(x1);
             roundXOffset = x - x1;
 
             z = z1 + mZ * roundXOffset;
-            st = CS580GL.Vector2.multiplyScalar(mST, roundXOffset).add(st1);
+            st = SOFT3.Vector2.multiplyScalar(mST, roundXOffset).add(st1);
             textureColor = this.getTextureColorFromScreenSpace(st.x, st.y, z);
 
             switch (this.shading) {
@@ -1012,16 +1012,16 @@ var CS580GL;
                     color = textureColor.clone();
                     break;
                 case 0 /* Flat */:
-                    color = CS580GL.Color.multiply(shadingParams.flatColor, textureColor);
+                    color = SOFT3.Color.multiply(shadingParams.flatColor, textureColor);
                     break;
                 case 1 /* Gouraud */:
-                    mGouraudColor = CS580GL.Color.subtract(shadingParams.color1, shadingParams.color2).multiplyScalar(invDeltaX);
+                    mGouraudColor = SOFT3.Color.subtract(shadingParams.color1, shadingParams.color2).multiplyScalar(invDeltaX);
                     gouraudColor = shadingParams.color1.clone(); // avoid clamping
-                    color = CS580GL.Color.multiply(gouraudColor, textureColor);
+                    color = SOFT3.Color.multiply(gouraudColor, textureColor);
                     break;
                 case 2 /* Phong */:
-                    mNormal = CS580GL.Vector3.subtract(shadingParams.normal1, shadingParams.normal2).multiplyScalar(invDeltaX);
-                    normal = CS580GL.Vector3.multiplyScalar(mNormal, roundXOffset).add(shadingParams.normal1);
+                    mNormal = SOFT3.Vector3.subtract(shadingParams.normal1, shadingParams.normal2).multiplyScalar(invDeltaX);
+                    normal = SOFT3.Vector3.multiplyScalar(mNormal, roundXOffset).add(shadingParams.normal1);
                     color = this.shadeByNormal(shadingParams.normal1, textureColor); // avoid clamping
                     break;
                 default:
@@ -1040,11 +1040,11 @@ var CS580GL;
                         color = textureColor.clone();
                         break;
                     case 0 /* Flat */:
-                        color = CS580GL.Color.multiply(shadingParams.flatColor, textureColor);
+                        color = SOFT3.Color.multiply(shadingParams.flatColor, textureColor);
                         break;
                     case 1 /* Gouraud */:
                         gouraudColor.add(mGouraudColor);
-                        color = CS580GL.Color.multiply(gouraudColor, textureColor);
+                        color = SOFT3.Color.multiply(gouraudColor, textureColor);
                         break;
                     case 2 /* Phong */:
                         normal.add(mNormal);
@@ -1068,10 +1068,10 @@ var CS580GL;
 
         Renderer.prototype.shadeByNormal = function (normal, textureColor) {
             var _this = this;
-            if (typeof textureColor === "undefined") { textureColor = new CS580GL.Color(1, 1, 1); }
+            if (typeof textureColor === "undefined") { textureColor = new SOFT3.Color(1, 1, 1); }
             var n = normal.clone().normalize();
 
-            var diffuse = new CS580GL.Color(0, 0, 0), specular = new CS580GL.Color(0, 0, 0);
+            var diffuse = new SOFT3.Color(0, 0, 0), specular = new SOFT3.Color(0, 0, 0);
 
             this.directionalLights.forEach(function (light) {
                 var l = light.direction.normalize();
@@ -1087,18 +1087,18 @@ var CS580GL;
                     return;
                 }
 
-                diffuse.add(CS580GL.Color.multiplyScalar(light.color, CS580GL.clamp(nDotL, 0, 1)));
-                specular.add(CS580GL.Color.multiplyScalar(light.color, Math.pow(CS580GL.clamp(reflectZ, 0, 1), _this.shininess)));
+                diffuse.add(SOFT3.Color.multiplyScalar(light.color, SOFT3.clamp(nDotL, 0, 1)));
+                specular.add(SOFT3.Color.multiplyScalar(light.color, Math.pow(SOFT3.clamp(reflectZ, 0, 1), _this.shininess)));
             });
 
-            return CS580GL.Color.multiplyScalar(this.ambientLight, this.ambientCoefficient).add(diffuse.multiplyScalar(this.diffuseCoefficient)).multiply(textureColor).add(specular.multiplyScalar(this.specularCoefficient)).clamp();
+            return SOFT3.Color.multiplyScalar(this.ambientLight, this.ambientCoefficient).add(diffuse.multiplyScalar(this.diffuseCoefficient)).multiply(textureColor).add(specular.multiplyScalar(this.specularCoefficient)).clamp();
         };
 
         Renderer.prototype.renderScreenTriangle = function (triangle) {
             var _this = this;
             // Sort vertices
             var vertices = triangle.toVertexArray().sort(function (l, r) {
-                return !CS580GL.floatEq(l.position.y, r.position.y) ? l.position.y - r.position.y : l.position.x - r.position.x;
+                return !SOFT3.floatEq(l.position.y, r.position.y) ? l.position.y - r.position.y : l.position.x - r.position.x;
             });
             vertices.forEach(function (v) {
                 v.position.x += _this.antiAliasShift.x;
@@ -1130,9 +1130,9 @@ var CS580GL;
                 invDeltaY[2] * (pos(1).z - pos(2).z)
             ];
             var mST = [
-                CS580GL.Vector2.subtract(vST(0), vST(1)).multiplyScalar(invDeltaY[0]),
-                CS580GL.Vector2.subtract(vST(0), vST(2)).multiplyScalar(invDeltaY[1]),
-                CS580GL.Vector2.subtract(vST(1), vST(2)).multiplyScalar(invDeltaY[2])
+                SOFT3.Vector2.subtract(vST(0), vST(1)).multiplyScalar(invDeltaY[0]),
+                SOFT3.Vector2.subtract(vST(0), vST(2)).multiplyScalar(invDeltaY[1]),
+                SOFT3.Vector2.subtract(vST(1), vST(2)).multiplyScalar(invDeltaY[2])
             ];
 
             var isMidVertexLeft;
@@ -1158,9 +1158,9 @@ var CS580GL;
                 pos(1).z + mZ[2] * roundYOffset[1]
             ];
             var st = [
-                CS580GL.Vector2.multiplyScalar(mST[0], roundYOffset[0]).add(vST(0)),
-                CS580GL.Vector2.multiplyScalar(mST[1], roundYOffset[0]).add(vST(0)),
-                CS580GL.Vector2.multiplyScalar(mST[2], roundYOffset[1]).add(vST(1))
+                SOFT3.Vector2.multiplyScalar(mST[0], roundYOffset[0]).add(vST(0)),
+                SOFT3.Vector2.multiplyScalar(mST[1], roundYOffset[0]).add(vST(0)),
+                SOFT3.Vector2.multiplyScalar(mST[2], roundYOffset[1]).add(vST(1))
             ];
 
             var y = Math.ceil(pos(0).y);
@@ -1191,26 +1191,26 @@ var CS580GL;
                         this.shadeByNormal(vertices[2].normal)
                     ];
                     mColor = [
-                        CS580GL.Color.subtract(vColors[0], vColors[1]).multiplyScalar(invDeltaY[0]),
-                        CS580GL.Color.subtract(vColors[0], vColors[2]).multiplyScalar(invDeltaY[1]),
-                        CS580GL.Color.subtract(vColors[1], vColors[2]).multiplyScalar(invDeltaY[2])
+                        SOFT3.Color.subtract(vColors[0], vColors[1]).multiplyScalar(invDeltaY[0]),
+                        SOFT3.Color.subtract(vColors[0], vColors[2]).multiplyScalar(invDeltaY[1]),
+                        SOFT3.Color.subtract(vColors[1], vColors[2]).multiplyScalar(invDeltaY[2])
                     ];
                     color = [
-                        CS580GL.Color.multiplyScalar(mColor[0], roundYOffset[0]).add(vColors[0]),
-                        CS580GL.Color.multiplyScalar(mColor[1], roundYOffset[0]).add(vColors[0]),
-                        CS580GL.Color.multiplyScalar(mColor[2], roundYOffset[1]).add(vColors[1])
+                        SOFT3.Color.multiplyScalar(mColor[0], roundYOffset[0]).add(vColors[0]),
+                        SOFT3.Color.multiplyScalar(mColor[1], roundYOffset[0]).add(vColors[0]),
+                        SOFT3.Color.multiplyScalar(mColor[2], roundYOffset[1]).add(vColors[1])
                     ];
                     break;
                 case 2 /* Phong */:
                     mNormal = [
-                        CS580GL.Vector3.subtract(vNormal(0), vNormal(1)).multiplyScalar(invDeltaY[0]),
-                        CS580GL.Vector3.subtract(vNormal(0), vNormal(2)).multiplyScalar(invDeltaY[1]),
-                        CS580GL.Vector3.subtract(vNormal(1), vNormal(2)).multiplyScalar(invDeltaY[2])
+                        SOFT3.Vector3.subtract(vNormal(0), vNormal(1)).multiplyScalar(invDeltaY[0]),
+                        SOFT3.Vector3.subtract(vNormal(0), vNormal(2)).multiplyScalar(invDeltaY[1]),
+                        SOFT3.Vector3.subtract(vNormal(1), vNormal(2)).multiplyScalar(invDeltaY[2])
                     ];
                     normal = [
-                        CS580GL.Vector3.multiplyScalar(mNormal[0], roundYOffset[0]).add(vNormal(0)),
-                        CS580GL.Vector3.multiplyScalar(mNormal[1], roundYOffset[0]).add(vNormal(0)),
-                        CS580GL.Vector3.multiplyScalar(mNormal[2], roundYOffset[1]).add(vNormal(1))
+                        SOFT3.Vector3.multiplyScalar(mNormal[0], roundYOffset[0]).add(vNormal(0)),
+                        SOFT3.Vector3.multiplyScalar(mNormal[1], roundYOffset[0]).add(vNormal(0)),
+                        SOFT3.Vector3.multiplyScalar(mNormal[2], roundYOffset[1]).add(vNormal(1))
                     ];
                     break;
                 case 3 /* TextureOnly */:
@@ -1325,7 +1325,7 @@ var CS580GL;
         Renderer.prototype.getTransformedVertex = function (vertex) {
             var screenPos = vertex.position.clone().applyAsHomogeneous(this.accumulatedTransformation);
             var screenNormal = vertex.normal.clone().transformDirection(this.accumulatedNormalTransformation);
-            var warpFactor = 1 + screenPos.z / (CS580GL.Display.Z_MAX - screenPos.z);
+            var warpFactor = 1 + screenPos.z / (SOFT3.Display.Z_MAX - screenPos.z);
             var screenTexture = vertex.textureCoordinate.clone().multiplyScalar(1 / warpFactor);
 
             return {
@@ -1336,7 +1336,7 @@ var CS580GL;
         };
 
         Renderer.prototype.renderTriangle = function (triangle) {
-            var screenTriangle = new CS580GL.MeshTriangle(this.getTransformedVertex(triangle.a), this.getTransformedVertex(triangle.b), this.getTransformedVertex(triangle.c));
+            var screenTriangle = new SOFT3.MeshTriangle(this.getTransformedVertex(triangle.a), this.getTransformedVertex(triangle.b), this.getTransformedVertex(triangle.c));
             this.renderScreenTriangle(screenTriangle);
             return this;
         };
@@ -1347,7 +1347,7 @@ var CS580GL;
         Renderer.prototype.initializeAntiAliasSubRenderers = function () {
             this.antiAliasSubRenderers = [];
             for (var i = 0; i < this.antiAliasFilter.length; i += 1) {
-                var subRenderer = new Renderer(new CS580GL.Display(this.display.width, this.display.height));
+                var subRenderer = new Renderer(new SOFT3.Display(this.display.width, this.display.height));
                 subRenderer.antiAliasShift = this.antiAliasFilter[i].delta;
                 this.antiAliasSubRenderers.push(subRenderer);
             }
@@ -1418,42 +1418,10 @@ var CS580GL;
         };
         return Renderer;
     })();
-    CS580GL.Renderer = Renderer;
-})(CS580GL || (CS580GL = {}));
-/// <reference path="glib/Renderer.ts" />
+    SOFT3.Renderer = Renderer;
+})(SOFT3 || (SOFT3 = {}));
+/// <reference path="soft3/Renderer.ts" />
 (function () {
-    var defaultBackgroundColor = CS580GL.Color.fromRGBUint8(130, 112, 95);
-    var defaultBackgroundPixel = new CS580GL.Pixel().setColor(defaultBackgroundColor);
-
-    // ---- Homework 1 ----
-    function renderHomework1(rectData, flush) {
-        var display = new CS580GL.Display(512, 512).reset(defaultBackgroundPixel);
-
-        var scaleRgb = function (value) {
-            return Math.round(CS580GL.clamp(value, 0, 4095) / 4095 * 255);
-        };
-
-        var renderRectangle = function (dataLine) {
-            var numbers = dataLine.split("\t").map(function (n) {
-                return parseInt(n);
-            });
-            var r = scaleRgb(numbers[4]);
-            var g = scaleRgb(numbers[5]);
-            var b = scaleRgb(numbers[6]);
-            for (var x = Math.max(0, numbers[0]); x <= Math.min(numbers[2], 511); x++) {
-                for (var y = Math.max(0, numbers[1]); y <= Math.min(numbers[3], 511); y++) {
-                    display.pixelAt(x, y).setRedUint8(r).setGreenUint8(g).setBlueUint8(b);
-                }
-            }
-        };
-
-        rectData.trim().split("\n").forEach(renderRectangle);
-
-        flush(display, true);
-    }
-
-    // ---- Homework 2 ----
-    // Helper function for Homework 2 and beyond: parse triangle data string
     function parseTriangles(trianglesData, invertZ) {
         if (typeof invertZ === "undefined") { invertZ = true; }
         var result = [];
@@ -1463,9 +1431,9 @@ var CS580GL;
                 return parseFloat(s);
             });
             return {
-                position: new CS580GL.Vector3(numbers[0], numbers[1], invertZ ? -numbers[2] : numbers[2]),
-                normal: new CS580GL.Vector3(numbers[3], numbers[4], invertZ ? -numbers[5] : numbers[5]),
-                textureCoordinate: new CS580GL.Vector2(numbers[6], numbers[7])
+                position: new SOFT3.Vector3(numbers[0], numbers[1], invertZ ? -numbers[2] : numbers[2]),
+                normal: new SOFT3.Vector3(numbers[3], numbers[4], invertZ ? -numbers[5] : numbers[5]),
+                textureCoordinate: new SOFT3.Vector2(numbers[6], numbers[7])
             };
         };
 
@@ -1475,196 +1443,36 @@ var CS580GL;
             var v2 = parseVertex(lines[i + 2]);
             var v3 = parseVertex(lines[i + 3]);
 
-            var triangle = new CS580GL.MeshTriangle(v1, v2, v3);
+            var triangle = new SOFT3.MeshTriangle(v1, v2, v3);
             result.push(triangle);
         }
 
         return result;
     }
 
-    function renderHomework2(screenPotData, flush) {
-        var display = new CS580GL.Display(256, 256).reset(defaultBackgroundPixel);
-        var renderer = new CS580GL.Renderer(display);
-        renderer.shading = 0 /* Flat */;
-        renderer.directionalLights = [
-            {
-                direction: new CS580GL.Vector3(-0.707, -0.5, -0.5),
-                color: new CS580GL.Color(0.95, 0.65, 0.88)
-            },
-            {
-                direction: new CS580GL.Vector3(0.707, 0.5, 0.5),
-                color: new CS580GL.Color(0.95, 0.65, 0.88)
-            }
-        ];
-
-        var triangles = parseTriangles(screenPotData, false);
-        for (var i = 0; i < triangles.length; i += 1) {
-            renderer.renderScreenTriangle(triangles[i]);
-        }
-
-        flush(display, true);
-    }
-
-    // ---- Homework 3 ----
-    // Helper function for Homework 3 and 4: create a default camera
-    function getDefaultCamera1() {
-        return new CS580GL.Camera({
-            position: new CS580GL.Vector3(13.2, -8.7, 14.8),
-            lookAtTarget: new CS580GL.Vector3(0.8, 0.7, -4.5),
-            up: new CS580GL.Vector3(-0.2, 1.0, 0),
-            fov: 53.7 / 180 * Math.PI
-        });
-    }
-
-    // Helper function for Homework 3 and beyond: apply transformations according to parameter settings
     function applyTransformationParams(renderer, params) {
         renderer.toWorldTransformationStack = [
-            CS580GL.Matrix4.makeTranslation(params.translate.x, params.translate.y, params.translate.z),
-            CS580GL.Matrix4.makeRotationZ(params.rotate.z),
-            CS580GL.Matrix4.makeRotationY(params.rotate.y),
-            CS580GL.Matrix4.makeRotationX(params.rotate.x),
-            CS580GL.Matrix4.makeScale(params.scale.x, params.scale.y, params.scale.z)
+            SOFT3.Matrix4.makeTranslation(params.translate.x, params.translate.y, params.translate.z),
+            SOFT3.Matrix4.makeRotationZ(params.rotate.z),
+            SOFT3.Matrix4.makeRotationY(params.rotate.y),
+            SOFT3.Matrix4.makeRotationX(params.rotate.x),
+            SOFT3.Matrix4.makeScale(params.scale.x, params.scale.y, params.scale.z)
         ];
 
         renderer.normalTransformationStack = [
-            CS580GL.Matrix4.makeRotationZ(params.rotate.z),
-            CS580GL.Matrix4.makeRotationY(params.rotate.y),
-            CS580GL.Matrix4.makeRotationX(params.rotate.x)
+            SOFT3.Matrix4.makeRotationZ(params.rotate.z),
+            SOFT3.Matrix4.makeRotationY(params.rotate.y),
+            SOFT3.Matrix4.makeRotationX(params.rotate.x)
         ];
 
         if (params.rotateCamera) {
             if (params.rotateCameraY) {
-                renderer.camera.position.applyAsHomogeneous(CS580GL.Matrix4.makeRotationY(1 / 180 * Math.PI));
+                renderer.camera.position.applyAsHomogeneous(SOFT3.Matrix4.makeRotationY(1 / 180 * Math.PI));
             }
             renderer.camera.updateLookAtMatrix();
         }
 
         renderer.updateAccumulatedTransformation();
-    }
-
-    function renderHomework3(potData, getParameters, flush) {
-        var display = new CS580GL.Display(256, 256);
-
-        var renderer = new CS580GL.Renderer(display);
-        renderer.camera = getDefaultCamera1();
-
-        renderer.shading = 0 /* Flat */;
-        renderer.directionalLights = [
-            {
-                direction: new CS580GL.Vector3(0.818, 0.523, -0.23),
-                color: new CS580GL.Color(0.95, 0.65, 0.88)
-            },
-            {
-                direction: new CS580GL.Vector3(-0.818, -0.523, 0.23),
-                color: new CS580GL.Color(0.95, 0.65, 0.88)
-            }
-        ];
-
-        var triangles = parseTriangles(potData);
-
-        var renderLoop = function (toImageFile) {
-            if (typeof toImageFile === "undefined") { toImageFile = false; }
-            var parameters = getParameters();
-
-            if (parameters.selection !== "hw3") {
-                return;
-            }
-
-            display.reset(defaultBackgroundPixel);
-            applyTransformationParams(renderer, parameters);
-
-            renderer.renderAllTriangles(triangles, parameters.antiAlias);
-
-            flush(display, toImageFile);
-
-            if (parameters.rotateCamera) {
-                requestAnimationFrame(function () {
-                    return renderLoop();
-                });
-            } else {
-                setTimeout(function () {
-                    return requestAnimationFrame(function () {
-                        return renderLoop();
-                    });
-                }, 100);
-            }
-        };
-
-        renderLoop(true);
-    }
-
-    // ---- Homework 4 ----
-    function renderHomework4(potData, getParameters, flush) {
-        var display = new CS580GL.Display(256, 256);
-
-        var renderer = new CS580GL.Renderer(display);
-        renderer.camera = getDefaultCamera1();
-
-        renderer.ambientCoefficient = 0.1;
-        renderer.diffuseCoefficient = 0.7;
-        renderer.specularCoefficient = 0.3;
-        renderer.shininess = 32;
-        renderer.ambientLight = new CS580GL.Color(0.3, 0.3, 0.3);
-        renderer.directionalLights = [
-            {
-                direction: new CS580GL.Vector3(-0.7071, 0.7071, 0),
-                color: new CS580GL.Color(0.5, 0.5, 0.9)
-            },
-            {
-                direction: new CS580GL.Vector3(0, -0.7071, 0.7071),
-                color: new CS580GL.Color(0.9, 0.2, 0.3)
-            },
-            {
-                direction: new CS580GL.Vector3(0.7071, 0.0, 0.7071),
-                color: new CS580GL.Color(0.2, 0.7, 0.3)
-            }
-        ];
-
-        var triangles = parseTriangles(potData);
-
-        var renderLoop = function (toImageFile) {
-            if (typeof toImageFile === "undefined") { toImageFile = false; }
-            var parameters = getParameters();
-
-            if (parameters.selection !== "hw4") {
-                return;
-            }
-
-            var oldShading = renderer.shading;
-            renderer.shading = parameters.shading;
-
-            display.reset(defaultBackgroundPixel);
-            applyTransformationParams(renderer, parameters);
-
-            renderer.renderAllTriangles(triangles, parameters.antiAlias);
-
-            flush(display, toImageFile);
-
-            if (parameters.rotateCamera) {
-                requestAnimationFrame(function () {
-                    return renderLoop(oldShading !== renderer.shading);
-                });
-            } else {
-                setTimeout(function () {
-                    return requestAnimationFrame(function () {
-                        return renderLoop(oldShading !== renderer.shading);
-                    });
-                }, 100);
-            }
-        };
-
-        renderLoop(true);
-    }
-
-    // ---- Homework 5 ----
-    // Helper function for Homework 5: create a default camera
-    function getDefaultCamera2() {
-        return new CS580GL.Camera({
-            position: new CS580GL.Vector3(-3, -25, 4),
-            lookAtTarget: new CS580GL.Vector3(7.8, 0.7, -6.5),
-            up: new CS580GL.Vector3(-0.2, 1.0, 0),
-            fov: 63.7 / 180 * Math.PI
-        });
     }
 
     function mandelbrotTexture(s, t) {
@@ -1676,64 +1484,65 @@ var CS580GL;
             nIter += 1;
         }
         if (nIter >= maxNIter) {
-            return new CS580GL.Color(0, 0, 0);
+            return new SOFT3.Color(0, 0, 0);
         } else {
             var c = 3 * Math.log(nIter) / Math.log(maxNIter);
             var i = Math.floor(c);
             var f = c - i;
             switch (i) {
                 case 0:
-                    return new CS580GL.Color(0, 1, f);
+                    return new SOFT3.Color(0, 1, f);
                     break;
                 case 1:
-                    return new CS580GL.Color(0, 1 - f, 1);
+                    return new SOFT3.Color(0, 1 - f, 1);
                     break;
                 case 2:
-                    return new CS580GL.Color(f, 0, 1);
+                    return new SOFT3.Color(f, 0, 1);
                     break;
                 default:
-                    return new CS580GL.Color(1, 0, 1);
+                    return new SOFT3.Color(1, 0, 1);
                     break;
             }
         }
     }
 
-    function renderHomework5(potData, getParameters, flush) {
-        var backgroundPixel = new CS580GL.Pixel().setColor(new CS580GL.Color(0.976, 0.976, 0.976));
-        var display = new CS580GL.Display(256, 256);
+    function doRender(dataStr, getParameters, flush) {
+        var backgroundPixel = new SOFT3.Pixel().setColor(new SOFT3.Color(0.976, 0.976, 0.976));
+        var display = new SOFT3.Display(256, 256);
 
-        var renderer = new CS580GL.Renderer(display);
-        renderer.camera = getDefaultCamera2();
+        var renderer = new SOFT3.Renderer(display);
+        renderer.camera = new SOFT3.Camera({
+            position: new SOFT3.Vector3(13.2, -8.7, 14.8),
+            lookAtTarget: new SOFT3.Vector3(0.8, 0.7, -4.5),
+            up: new SOFT3.Vector3(-0.2, 1.0, 0),
+            fov: 53.7 / 180 * Math.PI
+        });
 
-        renderer.ambientCoefficient = 1;
-        renderer.diffuseCoefficient = 1;
+        renderer.ambientCoefficient = 0.2;
+        renderer.diffuseCoefficient = 0.8;
         renderer.specularCoefficient = 0.3;
         renderer.shininess = 32;
-        renderer.ambientLight = new CS580GL.Color(0.3, 0.3, 0.3);
+        renderer.ambientLight = new SOFT3.Color(0.3, 0.3, 0.3);
         renderer.directionalLights = [
             {
-                direction: new CS580GL.Vector3(-0.7071, 0.7071, 0),
-                color: new CS580GL.Color(0.5, 0.5, 0.9)
+                direction: new SOFT3.Vector3(-0.7071, 0.7071, 0),
+                color: new SOFT3.Color(0.5, 0.5, 0.9)
             },
             {
-                direction: new CS580GL.Vector3(0, -0.7071, 0.7071),
-                color: new CS580GL.Color(0.9, 0.2, 0.3)
+                direction: new SOFT3.Vector3(0, -0.7071, 0.7071),
+                color: new SOFT3.Color(0.9, 0.2, 0.3)
             },
             {
-                direction: new CS580GL.Vector3(0.7071, 0.0, 0.7071),
-                color: new CS580GL.Color(0.2, 0.7, 0.3)
+                direction: new SOFT3.Vector3(0.7071, 0.0, 0.7071),
+                color: new SOFT3.Color(0.2, 0.7, 0.3)
             }
         ];
 
-        var triangles = parseTriangles(potData);
+        var triangles = parseTriangles(dataStr);
 
         var renderLoop = function (toImageFile) {
             if (typeof toImageFile === "undefined") { toImageFile = false; }
             var parameters = getParameters();
-
-            if (parameters.selection !== "hw5") {
-                return;
-            }
 
             var oldShading = renderer.shading;
             renderer.shading = parameters.shading;
@@ -1796,9 +1605,7 @@ var CS580GL;
     window.onload = function () {
         var canvasElem = document.getElementById("canvas");
         var downloadAnchorElem = document.getElementById("download");
-        var selectElem = document.getElementById("select");
 
-        var transformControlsElem = document.getElementById("transform-controls");
         var rotateCameraElem = document.getElementById("camera-rotation");
         var translateXElem = document.getElementById("translate-x");
         var translateYElem = document.getElementById("translate-y");
@@ -1810,24 +1617,18 @@ var CS580GL;
         var scaleYElem = document.getElementById("scale-y");
         var scaleZElem = document.getElementById("scale-z");
 
-        var shadingControlsElem = document.getElementById("shading-controls");
         var shadingElem = document.getElementById("shading");
+        var textureElem = document.getElementById("texture");
 
-        var textureControlsElem = document.getElementById("texture-controls");
-        var textureImageRadioElem = document.getElementById("texture-image-radio");
-        var textureProceduralRadioElem = document.getElementById("texture-procedural-radio");
-
-        var antiAliasControlsElem = document.getElementById("anti-alias-controls");
         var antiAliasCheckboxElem = document.getElementById("anti-alias-checkbox");
 
         var textureContainer = {
-            texture: CS580GL.allWhiteTexture
+            texture: SOFT3.allWhiteTexture = SOFT3.allWhiteTexture
         };
 
         // Utility function for getting parameters from input elements
         var getParameters = function () {
             var shading;
-
             switch (shadingElem.value) {
                 case "texture-only":
                     shading = 3 /* TextureOnly */;
@@ -1845,6 +1646,8 @@ var CS580GL;
                     debugger;
             }
 
+            var texture;
+
             var params = {
                 translate: {
                     x: parseFloat(translateXElem.value),
@@ -1861,7 +1664,6 @@ var CS580GL;
                     y: parseFloat(scaleYElem.value),
                     z: parseFloat(scaleZElem.value)
                 },
-                selection: selectElem.value,
                 rotateCameraY: rotateCameraElem.checked,
                 shading: shading,
                 texture: textureContainer.texture,
@@ -1882,80 +1684,6 @@ var CS580GL;
             }
         };
 
-        // Load data for the selected homework,
-        // call the corresponding render function,
-        // and flush the rendering result
-        var renderSelection = function () {
-            URL.revokeObjectURL(downloadAnchorElem.href);
-            downloadAnchorElem.href = "#";
-
-            if (selectElem.value === "hw1" || selectElem.value === "hw2") {
-                transformControlsElem.style.visibility = "collapse";
-            } else {
-                transformControlsElem.style.visibility = "visible";
-            }
-
-            if (selectElem.value === "hw4" || selectElem.value === "hw5") {
-                shadingControlsElem.style.visibility = "visible";
-            } else {
-                shadingControlsElem.style.visibility = "collapse";
-            }
-
-            if (selectElem.value == "hw5") {
-                textureControlsElem.style.visibility = "visible";
-            } else {
-                textureControlsElem.style.visibility = "collapse";
-            }
-
-            if (selectElem.value !== "hw1" && selectElem.value !== "hw2") {
-                antiAliasControlsElem.style.visibility = "visible";
-            } else {
-                antiAliasControlsElem.style.visibility = "collapse";
-            }
-
-            switch (selectElem.value) {
-                case "hw1":
-                    canvasElem.height = canvasElem.width = 512;
-                    loadTextFileAsync("data/rects", function (text) {
-                        renderHomework1(text, flush);
-                    });
-                    break;
-
-                case "hw2":
-                    canvasElem.height = canvasElem.width = 256;
-                    loadTextFileAsync("data/pot4.screen.asc", function (text) {
-                        renderHomework2(text, flush);
-                    });
-                    break;
-
-                case "hw3":
-                    canvasElem.height = canvasElem.width = 256;
-                    loadTextFileAsync("data/pot4.asc", function (text) {
-                        renderHomework3(text, getParameters, flush);
-                    });
-                    break;
-
-                case "hw4":
-                    canvasElem.height = canvasElem.width = 256;
-                    loadTextFileAsync("data/pot4.asc", function (text) {
-                        renderHomework4(text, getParameters, flush);
-                    });
-                    break;
-
-                case "hw5":
-                    canvasElem.height = canvasElem.width = 256;
-                    loadTextFileAsync("data/ppot.asc", function (text) {
-                        renderHomework5(text, getParameters, flush);
-                    });
-                    break;
-                default:
-            }
-        };
-
-        // Call once after load, and call each time the selection changes
-        renderSelection();
-        selectElem.onchange = renderSelection;
-
         // Hook-up input elements and their corresponding output
         var inputElems = document.getElementsByTagName("input");
         var hookUpInputOutput = function (i, o) {
@@ -1973,15 +1701,30 @@ var CS580GL;
         }
 
         // Hook-up texture control events
-        textureImageRadioElem.onclick = function () {
-            loadCorsImageDataAsync("data/texture.png", function (imageData) {
-                textureContainer.texture = CS580GL.makeImageTexture(imageData);
-            });
+        textureElem.onchange = function () {
+            switch (textureElem.value) {
+                case "no-texture":
+                    textureContainer.texture = SOFT3.allWhiteTexture;
+                    break;
+                case "image-texture":
+                    loadCorsImageDataAsync("data/texture.jpg", function (imageData) {
+                        textureContainer.texture = SOFT3.makeImageTexture(imageData);
+                    });
+                    break;
+                case "procedural-texture":
+                    textureContainer.texture = mandelbrotTexture;
+                    break;
+                default:
+                    debugger;
+            }
         };
-        textureProceduralRadioElem.onclick = function () {
-            textureContainer.texture = mandelbrotTexture;
-        };
-        textureImageRadioElem.click();
+
+        URL.revokeObjectURL(downloadAnchorElem.href);
+        downloadAnchorElem.href = "#";
+
+        loadTextFileAsync("data/pot.asc", function (text) {
+            doRender(text, getParameters, flush);
+        });
     };
 })();
 //# sourceMappingURL=app.js.map

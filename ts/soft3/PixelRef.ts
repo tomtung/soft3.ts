@@ -2,7 +2,7 @@
 /// <reference path="Display.ts" />
 /// <reference path="utils.ts" />
 
-module CS580GL {
+module SOFT3 {
     /** A PixelRef object is a reference to a pixel in a Display object. */
     export class PixelRef implements Pixel {
         zIndex: number;
