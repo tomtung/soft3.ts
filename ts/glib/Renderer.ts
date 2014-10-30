@@ -66,6 +66,11 @@ module CS580GL {
         }
     }
 
+    export interface IAntiAliasFilterElem {
+        delta: Vector2;
+        weight: number;
+    }
+
     /** Render objects constructor */
     export class Renderer {
         camera: Camera;
@@ -83,6 +88,15 @@ module CS580GL {
         shininess: number = 0.0;
         texture: ITexture = allWhiteTexture;
         antiAliasShift: Vector2 = new Vector2(0, 0);
+        antiAliasFilter: IAntiAliasFilterElem[] = [
+            {delta: new Vector2(-0.52, 0.38), weight: 0.128},
+            {delta: new Vector2(0.41, 0.56), weight: 0.119},
+            {delta: new Vector2(0.27, 0.08), weight: 0.294},
+            {delta: new Vector2(-0.17, -0.29), weight: 0.249},
+            {delta: new Vector2(0.58, -0.55), weight: 0.104},
+            {delta: new Vector2(-0.31, -0.71), weight: 0.106}
+        ];
+        private antiAliasSubRenderers: Renderer[] = null;
 
         constructor(public display: Display) {
             this.updateToScreenTransformation();
@@ -509,9 +523,77 @@ module CS580GL {
             return this;
         }
 
-        renderTriangles(triangles: MeshTriangle[]): Renderer {
-            for (var i = 0; i < triangles.length; i += 1) {
-                this.renderTriangle(triangles[i]);
+        /**
+         * Must be called whenever antiAliasFilter is changed.
+         */
+        initializeAntiAliasSubRenderers(): Renderer {
+            this.antiAliasSubRenderers = [];
+            for (var i = 0; i < this.antiAliasFilter.length; i += 1) {
+                var subRenderer = new Renderer(new Display(this.display.width, this.display.height));
+                subRenderer.antiAliasShift = this.antiAliasFilter[i].delta;
+                this.antiAliasSubRenderers.push(subRenderer);
+            }
+            return this;
+        }
+
+        /**
+         * Render all triangles contained in the scene.
+         * Note that if antiAlias is set, the z-buffer of display would no longer be valid for additional rendering.
+         */
+        renderAllTriangles(triangles: MeshTriangle[], antiAlias: boolean = false): Renderer {
+            if (!antiAlias) {
+                for (var i = 0; i < triangles.length; i += 1) {
+                    this.renderTriangle(triangles[i]);
+                }
+            } else {
+                // Lazy initialization
+                if (!this.antiAliasSubRenderers) {
+                    this.initializeAntiAliasSubRenderers();
+                }
+
+                for (var i = 0; i < this.antiAliasFilter.length; i += 1) {
+                    var subRenderer = this.antiAliasSubRenderers[i];
+
+                    // Shallow copy should suffice for the moment,
+                    // but we should be careful for future changes in Renderer
+                    subRenderer.accumulatedNormalTransformation = this.accumulatedNormalTransformation;
+                    subRenderer.camera = this.camera;
+                    subRenderer.toWorldTransformationStack = this.toWorldTransformationStack;
+                    subRenderer.normalTransformationStack = this.normalTransformationStack;
+                    subRenderer.normalTransformationStack = this.normalTransformationStack;
+                    subRenderer.toScreenTransformation = this.toScreenTransformation;
+                    subRenderer.accumulatedTransformation = this.accumulatedTransformation;
+                    subRenderer.accumulatedNormalTransformation = this.accumulatedNormalTransformation;
+                    subRenderer.shading = this.shading;
+                    subRenderer.ambientLight = this.ambientLight;
+                    subRenderer.ambientCoefficient = this.ambientCoefficient;
+                    subRenderer.directionalLights = this.directionalLights;
+                    subRenderer.diffuseCoefficient = this.diffuseCoefficient;
+                    subRenderer.specularCoefficient = this.specularCoefficient;
+                    subRenderer.shininess = this.shininess;
+                    subRenderer.texture = this.texture;
+
+                    var subDisplay = subRenderer.display;
+                    subDisplay.rgbaBuffer.set(this.display.rgbaBuffer);
+                    subDisplay.zBuffer.set(this.display.zBuffer);
+
+                    subRenderer.renderAllTriangles(triangles, false);
+                }
+
+                for(var j = 0; j < this.display.rgbaBuffer.length; j += 4) {
+                    var r = 0, g = 0, b = 0;
+                    for (var i = 0; i < this.antiAliasFilter.length; i += 1) {
+                        var w = this.antiAliasFilter[i].weight;
+                        var subBuffer = this.antiAliasSubRenderers[i].display.rgbaBuffer;
+                        r += subBuffer[j] * w;
+                        g += subBuffer[j + 1] * w;
+                        b += subBuffer[j + 2] * w;
+                    }
+
+                    this.display.rgbaBuffer[j] = Math.floor(r);
+                    this.display.rgbaBuffer[j + 1] = Math.floor(g);
+                    this.display.rgbaBuffer[j + 2] = Math.floor(b);
+                }
             }
             return this;
         }

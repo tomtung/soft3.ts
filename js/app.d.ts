@@ -277,6 +277,10 @@ declare module CS580GL {
     }
     var allWhiteTexture: ITexture;
     function makeImageTexture(image: ImageData): ITexture;
+    interface IAntiAliasFilterElem {
+        delta: Vector2;
+        weight: number;
+    }
     /** Render objects constructor */
     class Renderer {
         public display: Display;
@@ -295,6 +299,8 @@ declare module CS580GL {
         public shininess: number;
         public texture: ITexture;
         public antiAliasShift: Vector2;
+        public antiAliasFilter: IAntiAliasFilterElem[];
+        private antiAliasSubRenderers;
         constructor(display: Display);
         /** Update the to-screen transformation matrix. Must be invoked if  display is changed. */
         public updateToScreenTransformation(): Renderer;
@@ -308,6 +314,14 @@ declare module CS580GL {
         public renderScreenTriangle(triangle: MeshTriangle): Renderer;
         private getTransformedVertex(vertex);
         public renderTriangle(triangle: MeshTriangle): Renderer;
-        public renderTriangles(triangles: MeshTriangle[]): Renderer;
+        /**
+        * Must be called whenever antiAliasFilter is changed.
+        */
+        public initializeAntiAliasSubRenderers(): Renderer;
+        /**
+        * Render all triangles contained in the scene.
+        * Note that if antiAlias is set, the z-buffer of display would no longer be valid for additional rendering.
+        */
+        public renderAllTriangles(triangles: MeshTriangle[], antiAlias?: boolean): Renderer;
     }
 }

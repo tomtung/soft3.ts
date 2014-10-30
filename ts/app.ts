@@ -149,7 +149,7 @@
             display.reset(defaultBackgroundPixel);
             applyTransformationParams(renderer, parameters);
 
-            renderer.renderTriangles(triangles);
+            renderer.renderAllTriangles(triangles, parameters.antiAlias);
 
             flush(display, toImageFile);
 
@@ -206,7 +206,7 @@
             display.reset(defaultBackgroundPixel);
             applyTransformationParams(renderer, parameters);
 
-            renderer.renderTriangles(triangles);
+            renderer.renderAllTriangles(triangles, parameters.antiAlias);
 
             flush(display, toImageFile);
 
@@ -310,7 +310,7 @@
             display.reset(backgroundPixel);
             applyTransformationParams(renderer, parameters);
 
-            renderer.renderTriangles(triangles);
+            renderer.renderAllTriangles(triangles, parameters.antiAlias);
 
             flush(display, toImageFile);
 
@@ -377,6 +377,9 @@
         var textureImageRadioElem = <HTMLInputElement> document.getElementById("texture-image-radio");
         var textureProceduralRadioElem = <HTMLInputElement> document.getElementById("texture-procedural-radio");
 
+        var antiAliasControlsElem = <HTMLDivElement> document.getElementById("anti-alias-controls");
+        var antiAliasCheckboxElem = <HTMLInputElement> document.getElementById("anti-alias-checkbox");
+
         var textureContainer = {
             texture: CS580GL.allWhiteTexture
         };
@@ -421,7 +424,8 @@
                 selection: <string> selectElem.value,
                 rotateCameraY: rotateCameraElem.checked,
                 shading: shading,
-                texture: textureContainer.texture
+                texture: textureContainer.texture,
+                antiAlias: antiAliasCheckboxElem.checked
             };
             params.rotateCamera = params.rotateCameraY;
             return params;
@@ -460,6 +464,12 @@
                 textureControlsElem.style.visibility = "visible";
             } else {
                 textureControlsElem.style.visibility = "collapse";
+            }
+
+            if (selectElem.value !== "hw1" && selectElem.value !== "hw2") {
+                antiAliasControlsElem.style.visibility = "visible";
+            } else {
+                antiAliasControlsElem.style.visibility = "collapse";
             }
 
             switch (selectElem.value) {

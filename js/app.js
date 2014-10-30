@@ -925,6 +925,15 @@ var CS580GL;
             this.shininess = 0.0;
             this.texture = CS580GL.allWhiteTexture;
             this.antiAliasShift = new CS580GL.Vector2(0, 0);
+            this.antiAliasFilter = [
+                { delta: new CS580GL.Vector2(-0.52, 0.38), weight: 0.128 },
+                { delta: new CS580GL.Vector2(0.41, 0.56), weight: 0.119 },
+                { delta: new CS580GL.Vector2(0.27, 0.08), weight: 0.294 },
+                { delta: new CS580GL.Vector2(-0.17, -0.29), weight: 0.249 },
+                { delta: new CS580GL.Vector2(0.58, -0.55), weight: 0.104 },
+                { delta: new CS580GL.Vector2(-0.31, -0.71), weight: 0.106 }
+            ];
+            this.antiAliasSubRenderers = null;
             this.updateToScreenTransformation();
         }
         /** Update the to-screen transformation matrix. Must be invoked if  display is changed. */
@@ -1332,9 +1341,78 @@ var CS580GL;
             return this;
         };
 
-        Renderer.prototype.renderTriangles = function (triangles) {
-            for (var i = 0; i < triangles.length; i += 1) {
-                this.renderTriangle(triangles[i]);
+        /**
+        * Must be called whenever antiAliasFilter is changed.
+        */
+        Renderer.prototype.initializeAntiAliasSubRenderers = function () {
+            this.antiAliasSubRenderers = [];
+            for (var i = 0; i < this.antiAliasFilter.length; i += 1) {
+                var subRenderer = new Renderer(new CS580GL.Display(this.display.width, this.display.height));
+                subRenderer.antiAliasShift = this.antiAliasFilter[i].delta;
+                this.antiAliasSubRenderers.push(subRenderer);
+            }
+            return this;
+        };
+
+        /**
+        * Render all triangles contained in the scene.
+        * Note that if antiAlias is set, the z-buffer of display would no longer be valid for additional rendering.
+        */
+        Renderer.prototype.renderAllTriangles = function (triangles, antiAlias) {
+            if (typeof antiAlias === "undefined") { antiAlias = false; }
+            if (!antiAlias) {
+                for (var i = 0; i < triangles.length; i += 1) {
+                    this.renderTriangle(triangles[i]);
+                }
+            } else {
+                // Lazy initialization
+                if (!this.antiAliasSubRenderers) {
+                    this.initializeAntiAliasSubRenderers();
+                }
+
+                for (var i = 0; i < this.antiAliasFilter.length; i += 1) {
+                    var subRenderer = this.antiAliasSubRenderers[i];
+
+                    // Shallow copy should suffice for the moment,
+                    // but we should be careful for future changes in Renderer
+                    subRenderer.accumulatedNormalTransformation = this.accumulatedNormalTransformation;
+                    subRenderer.camera = this.camera;
+                    subRenderer.toWorldTransformationStack = this.toWorldTransformationStack;
+                    subRenderer.normalTransformationStack = this.normalTransformationStack;
+                    subRenderer.normalTransformationStack = this.normalTransformationStack;
+                    subRenderer.toScreenTransformation = this.toScreenTransformation;
+                    subRenderer.accumulatedTransformation = this.accumulatedTransformation;
+                    subRenderer.accumulatedNormalTransformation = this.accumulatedNormalTransformation;
+                    subRenderer.shading = this.shading;
+                    subRenderer.ambientLight = this.ambientLight;
+                    subRenderer.ambientCoefficient = this.ambientCoefficient;
+                    subRenderer.directionalLights = this.directionalLights;
+                    subRenderer.diffuseCoefficient = this.diffuseCoefficient;
+                    subRenderer.specularCoefficient = this.specularCoefficient;
+                    subRenderer.shininess = this.shininess;
+                    subRenderer.texture = this.texture;
+
+                    var subDisplay = subRenderer.display;
+                    subDisplay.rgbaBuffer.set(this.display.rgbaBuffer);
+                    subDisplay.zBuffer.set(this.display.zBuffer);
+
+                    subRenderer.renderAllTriangles(triangles, false);
+                }
+
+                for (var j = 0; j < this.display.rgbaBuffer.length; j += 4) {
+                    var r = 0, g = 0, b = 0;
+                    for (var i = 0; i < this.antiAliasFilter.length; i += 1) {
+                        var w = this.antiAliasFilter[i].weight;
+                        var subBuffer = this.antiAliasSubRenderers[i].display.rgbaBuffer;
+                        r += subBuffer[j] * w;
+                        g += subBuffer[j + 1] * w;
+                        b += subBuffer[j + 2] * w;
+                    }
+
+                    this.display.rgbaBuffer[j] = Math.floor(r);
+                    this.display.rgbaBuffer[j + 1] = Math.floor(g);
+                    this.display.rgbaBuffer[j + 2] = Math.floor(b);
+                }
             }
             return this;
         };
@@ -1495,7 +1573,7 @@ var CS580GL;
             display.reset(defaultBackgroundPixel);
             applyTransformationParams(renderer, parameters);
 
-            renderer.renderTriangles(triangles);
+            renderer.renderAllTriangles(triangles, parameters.antiAlias);
 
             flush(display, toImageFile);
 
@@ -1558,7 +1636,7 @@ var CS580GL;
             display.reset(defaultBackgroundPixel);
             applyTransformationParams(renderer, parameters);
 
-            renderer.renderTriangles(triangles);
+            renderer.renderAllTriangles(triangles, parameters.antiAlias);
 
             flush(display, toImageFile);
 
@@ -1666,7 +1744,7 @@ var CS580GL;
             display.reset(backgroundPixel);
             applyTransformationParams(renderer, parameters);
 
-            renderer.renderTriangles(triangles);
+            renderer.renderAllTriangles(triangles, parameters.antiAlias);
 
             flush(display, toImageFile);
 
@@ -1739,6 +1817,9 @@ var CS580GL;
         var textureImageRadioElem = document.getElementById("texture-image-radio");
         var textureProceduralRadioElem = document.getElementById("texture-procedural-radio");
 
+        var antiAliasControlsElem = document.getElementById("anti-alias-controls");
+        var antiAliasCheckboxElem = document.getElementById("anti-alias-checkbox");
+
         var textureContainer = {
             texture: CS580GL.allWhiteTexture
         };
@@ -1783,7 +1864,8 @@ var CS580GL;
                 selection: selectElem.value,
                 rotateCameraY: rotateCameraElem.checked,
                 shading: shading,
-                texture: textureContainer.texture
+                texture: textureContainer.texture,
+                antiAlias: antiAliasCheckboxElem.checked
             };
             params.rotateCamera = params.rotateCameraY;
             return params;
@@ -1823,6 +1905,12 @@ var CS580GL;
                 textureControlsElem.style.visibility = "visible";
             } else {
                 textureControlsElem.style.visibility = "collapse";
+            }
+
+            if (selectElem.value !== "hw1" && selectElem.value !== "hw2") {
+                antiAliasControlsElem.style.visibility = "visible";
+            } else {
+                antiAliasControlsElem.style.visibility = "collapse";
             }
 
             switch (selectElem.value) {
